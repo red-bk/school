@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { uploadFileToS3 } from "@/lib/s3";
+import { validateFile } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (!teacherId || typeof teacherId !== "string" || !teacherId.trim()) {
       return NextResponse.json(
         { error: "الرقم التعريفي للمعلم مطلوب" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -24,24 +25,20 @@ export async function POST(req: NextRequest) {
       typeof teacherName !== "string" ||
       !teacherName.trim()
     ) {
-      return NextResponse.json(
-        { error: "اسم المعلم مطلوب" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "اسم المعلم مطلوب" }, { status: 400 });
     }
 
     if (!sheetType || typeof sheetType !== "string") {
-      return NextResponse.json(
-        { error: "نوع الورقة مطلوب" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "نوع الورقة مطلوب" }, { status: 400 });
     }
 
     if (!file) {
-      return NextResponse.json(
-        { error: "يجب رفع ملف" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "يجب رفع ملف" }, { status: 400 });
+    }
+
+    const fileError = validateFile(file);
+    if (fileError) {
+      return NextResponse.json({ error: fileError }, { status: 400 });
     }
 
     // --- Convert File -> Buffer ---
@@ -52,7 +49,7 @@ export async function POST(req: NextRequest) {
     const { fileUrl, key } = await uploadFileToS3(
       buffer,
       file.name,
-      file.type || "application/octet-stream"
+      file.type || "application/octet-stream",
     );
 
     // --- Save record in DB via Prisma ---
@@ -72,7 +69,7 @@ export async function POST(req: NextRequest) {
     console.error("Upload error:", error);
     return NextResponse.json(
       { error: "حدث خطأ ما أثناء رفع الملف" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -86,9 +83,6 @@ export async function GET() {
     return NextResponse.json({ success: true, data: records });
   } catch (error) {
     console.error("Fetch error:", error);
-    return NextResponse.json(
-      { error: "فشل في جلب السجلات" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "فشل في جلب السجلات" }, { status: 500 });
   }
 }

@@ -14,21 +14,18 @@ export async function PATCH(req: NextRequest) {
     if (!teacherId || typeof teacherId !== "string" || !teacherId.trim()) {
       return NextResponse.json(
         { error: "الرقم التعريفي للمعلم مطلوب" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!sheetType || typeof sheetType !== "string") {
-      return NextResponse.json(
-        { error: "نوع الورقة مطلوب" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "نوع الورقة مطلوب" }, { status: 400 });
     }
 
     if (!file) {
       return NextResponse.json(
         { error: "يجب تقديم ملف بديل" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -46,10 +43,9 @@ export async function PATCH(req: NextRequest) {
     if (!existing) {
       return NextResponse.json(
         {
-          error:
-            "لم يتم العثور على ورقة بهذا الرقم التعريفي ونوع الورقة",
+          error: "لم يتم العثور على ورقة بهذا الرقم التعريفي ونوع الورقة",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -60,7 +56,7 @@ export async function PATCH(req: NextRequest) {
     const { fileUrl, key } = await uploadFileToS3(
       buffer,
       file.name,
-      file.type || "application/octet-stream"
+      file.type || "application/octet-stream",
     );
 
     // --- Remove the old file from S3 (best-effort, won't block on failure) ---
@@ -81,7 +77,7 @@ export async function PATCH(req: NextRequest) {
     console.error("Update error:", error);
     return NextResponse.json(
       { error: "حدث خطأ ما أثناء تحديث الملف" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

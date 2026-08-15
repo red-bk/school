@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
-import { SHEET_TYPES } from "@/lib/constants";
+import { SHEET_TYPES, validateFile } from "@/lib/constants";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 
@@ -35,6 +35,11 @@ export default function HomePage() {
     }
     if (!file) {
       setMessage("الرجاء اختيار ملف لرفعه.");
+      return;
+    }
+    const fileError = validateFile(file);
+    if (fileError) {
+      setMessage(fileError);
       return;
     }
 
@@ -155,11 +160,27 @@ export default function HomePage() {
             <input
               id="file-input"
               type="file"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                const selected = e.target.files?.[0] || null;
+                if (selected) {
+                  const error = validateFile(selected);
+                  if (error) {
+                    setMessage(error);
+                    setFile(null);
+                    e.target.value = "";
+                    return;
+                  }
+                }
+                setMessage("");
+                setFile(selected);
+              }}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none file:ms-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-200"
               required
             />
           </div>
+          <p className="text-xs text-slate-400">
+            الحد الأقصى لحجم الملف 5 جيجابايت. ملفات الفيديو غير مسموحة.
+          </p>
 
           <button
             type="submit"
