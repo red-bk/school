@@ -125,68 +125,70 @@ export default async function AdminPage({
                 : "لم يتم رفع أي أوراق بعد."}
             </p>
           ) : (
-            <table className="w-full text-right text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
-                <tr>
-                  <th className="px-4 py-3 font-medium">
-                    الرقم التعريفي للمعلم
-                  </th>
-                  <th className="px-4 py-3 font-medium">اسم المعلم</th>
-                  <th className="px-4 py-3 font-medium">نوع الملف</th>
-                  <th className="px-4 py-3 font-medium">تاريخ الإنشاء</th>
-                  <th className="px-4 py-3 font-medium">تاريخ التحديث</th>
-                  <th className="px-4 py-3 font-medium text-center">تحميل</th>
-                </tr>
-              </thead>
-              <tbody>
-                {uploads.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
-                  >
-                    <td className="px-4 py-3 text-slate-500">
-                      {row.teacherId}
-                    </td>
-                    <td className="px-4 py-3 text-slate-800">
-                      {row.teacherName}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                        {row.sheetType}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">
-                      {new Date(row.createdAt).toLocaleString("ar-EG")}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">
-                      {new Date(row.updatedAt).toLocaleString("ar-EG")}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <a
-                        href={`/api/download/${row.id}`}
-                        title={`تحميل ${row.fileName}`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-800 hover:text-white"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={1.8}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-5 w-5"
-                        >
-                          <path d="M12 3v12" />
-                          <path d="M7 10l5 5 5-5" />
-                          <path d="M5 21h14" />
-                        </svg>
-                      </a>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-right text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">
+                      الرقم التعريفي للمعلم
+                    </th>
+                    <th className="px-4 py-3 font-medium">اسم المعلم</th>
+                    <th className="px-4 py-3 font-medium">نوع الملف</th>
+                    <th className="px-4 py-3 font-medium">تاريخ الإنشاء</th>
+                    <th className="px-4 py-3 font-medium">تاريخ التحديث</th>
+                    <th className="px-4 py-3 font-medium text-center">تحميل</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {uploads.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-3 text-slate-500">
+                        {row.teacherId}
+                      </td>
+                      <td className="px-4 py-3 text-slate-800">
+                        {row.teacherName}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                          {row.sheetType}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {new Date(row.createdAt).toLocaleString("ar-EG")}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {new Date(row.updatedAt).toLocaleString("ar-EG")}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <a
+                          href={`/api/download/${row.id}`}
+                          title={`تحميل ${row.fileName}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-800 hover:text-white"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.8}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-5 w-5"
+                          >
+                            <path d="M12 3v12" />
+                            <path d="M7 10l5 5 5-5" />
+                            <path d="M5 21h14" />
+                          </svg>
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
