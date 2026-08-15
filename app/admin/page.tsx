@@ -157,10 +157,16 @@ export default async function AdminPage({
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-500">
-                        {new Date(row.createdAt).toLocaleString("ar-EG")}
+                        {new Date(row.createdAt).toLocaleString("ar-EG", {
+                          timeZone: "Asia/Riyadh",
+                          numberingSystem: "latn",
+                        })}
                       </td>
                       <td className="px-4 py-3 text-slate-500">
-                        {new Date(row.updatedAt).toLocaleString("ar-EG")}
+                        {new Date(row.updatedAt).toLocaleString("ar-EG", {
+                          timeZone: "Asia/Riyadh",
+                          numberingSystem: "latn",
+                        })}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <a
