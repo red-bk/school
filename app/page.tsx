@@ -8,7 +8,7 @@ type SubmitState = "idle" | "loading" | "success" | "error";
 export default function HomePage() {
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
-  const [sheetType, setSheetType] = useState(SHEET_TYPES[0]);
+  const [sheetType, setSheetType] = useState<string>(SHEET_TYPES[0]);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string>("");
@@ -66,7 +66,7 @@ export default function HomePage() {
       setFile(null);
       // إعادة تعيين حقل اختيار الملف
       const fileInput = document.getElementById(
-        "file-input"
+        "file-input",
       ) as HTMLInputElement | null;
       if (fileInput) fileInput.value = "";
     } catch (err: any) {
@@ -78,9 +78,7 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
-        <h1 className="mb-1 text-2xl font-semibold text-slate-800">
-          رفع ورقة
-        </h1>
+        <h1 className="mb-1 text-2xl font-semibold text-slate-800">رفع ورقة</h1>
         <p className="mb-6 text-sm text-slate-500">
           أدخل بياناتك، اختر نوع الورقة، وارفع الملف.
         </p>

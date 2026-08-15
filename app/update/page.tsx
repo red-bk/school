@@ -7,7 +7,7 @@ type SubmitState = "idle" | "loading" | "success" | "error";
 
 export default function UpdatePage() {
   const [teacherId, setTeacherId] = useState("");
-  const [sheetType, setSheetType] = useState(SHEET_TYPES[0]);
+  const [sheetType, setSheetType] = useState<string>(SHEET_TYPES[0]);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string>("");
@@ -57,7 +57,7 @@ export default function UpdatePage() {
       setSheetType(SHEET_TYPES[0]);
       setFile(null);
       const fileInput = document.getElementById(
-        "file-input"
+        "file-input",
       ) as HTMLInputElement | null;
       if (fileInput) fileInput.value = "";
     } catch (err: any) {
