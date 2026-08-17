@@ -13,6 +13,7 @@ export default function HomePage() {
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string>("");
   const [showToast, setShowToast] = useState(false);
+  const [wasReplaced, setWasReplaced] = useState(false);
 
   // إخفاء رسالة النجاح تلقائيًا بعد 5 ثوانٍ
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function HomePage() {
 
       setStatus("success");
       setMessage("");
+      setWasReplaced(Boolean(data?.replaced));
       setShowToast(true);
       setTeacherId("");
       setTeacherName("");
@@ -196,10 +198,7 @@ export default function HomePage() {
         </form>
 
         <p className="mt-5 text-center text-sm text-slate-500">
-          تحتاج إلى استبدال ملف رفعته سابقًا؟{" "}
-          <a href="/update" className="font-medium text-slate-800 underline">
-            حدّثه من هنا
-          </a>
+          سيتم استبدال أي ملف سابق من نفس النوع تلقائيًا عند رفع ملف جديد.
         </p>
       </div>
 
@@ -224,7 +223,9 @@ export default function HomePage() {
               clipRule="evenodd"
             />
           </svg>
-          تم رفع الملف بنجاح!
+          {wasReplaced
+            ? "تم استبدال الملف السابق بنجاح!"
+            : "تم رفع الملف بنجاح!"}
         </div>
       </div>
     </main>
