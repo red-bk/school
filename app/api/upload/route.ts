@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     // --- Validation ---
     if (!teacherId || typeof teacherId !== "string" || !teacherId.trim()) {
       return NextResponse.json(
-        { error: "الرقم التعريفي للمعلم مطلوب" },
+        { error: "رقم الهوية للمعلم مطلوب" },
         { status: 400 },
       );
     }

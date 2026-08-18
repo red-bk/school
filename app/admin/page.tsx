@@ -81,7 +81,7 @@ export default async function AdminPage({
               type="text"
               name="search"
               defaultValue={search}
-              placeholder="ابحث بالاسم أو الرقم التعريفي..."
+              placeholder="ابحث بالاسم"
               className="w-full rounded-lg border border-slate-300 py-2 ps-9 pe-3 text-sm outline-none focus:border-slate-500"
             />
           </div>
@@ -138,9 +138,6 @@ export default async function AdminPage({
               <table className="w-full min-w-[720px] text-right text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                   <tr>
-                    <th className="px-4 py-3 font-medium">
-                      الرقم التعريفي للمعلم
-                    </th>
                     <th className="px-4 py-3 font-medium">اسم المعلم</th>
                     <th className="px-4 py-3 font-medium w-48">نوع الملف</th>
                     <th className="px-4 py-3 font-medium">تاريخ الإنشاء</th>
@@ -154,9 +151,6 @@ export default async function AdminPage({
                       key={row.id}
                       className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
                     >
-                      <td className="px-4 py-3 text-slate-500">
-                        {row.teacherId}
-                      </td>
                       <td className="px-4 py-3 text-slate-800">
                         {row.teacherName}
                       </td>

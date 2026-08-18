@@ -66,7 +66,7 @@ export default function HomePage() {
     setMessage("");
 
     if (!teacherId.trim()) {
-      setMessage("الرجاء إدخال الرقم التعريفي للمعلم.");
+      setMessage("الرجاء إدخال رقم الهوية .");
       return;
     }
     if (!teacherName.trim()) {
@@ -128,13 +128,13 @@ export default function HomePage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* الرقم التعريفي للمعلم */}
+          {/* الرقم   */}
           <div>
             <label
               htmlFor="teacherId"
               className="mb-1 block text-sm font-medium text-slate-700"
             >
-              الرقم التعريفي للمعلم
+              الرقم الهوية
             </label>
             <input
               id="teacherId"
