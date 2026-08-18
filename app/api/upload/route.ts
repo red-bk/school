@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const sheetType = formData.get("sheetType");
     const file = formData.get("file") as File | null;
 
-    // --- Basic validation ---
+    // --- Validation ---
     if (!teacherId || typeof teacherId !== "string" || !teacherId.trim()) {
       return NextResponse.json(
         { error: "الرقم التعريفي للمعلم مطلوب" },
@@ -41,8 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: fileError }, { status: 400 });
     }
 
-    // --- Check for a previous submission of this exact sheet type ---
-    // If one exists, we replace its file instead of creating a duplicate.
+    // --- Check for existing record with same teacherId + sheetType ---
     const existing = await prisma.sheetUpload.findFirst({
       where: {
         teacherId: teacherId.trim(),
@@ -54,7 +53,7 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // --- Upload the new file to S3 ---
+    // --- Upload new file to S3 ---
     const { fileUrl, key } = await uploadFileToS3(
       buffer,
       file.name,
@@ -62,8 +61,13 @@ export async function POST(req: NextRequest) {
     );
 
     if (existing) {
-      // --- Replace: remove the old S3 object, update the existing record ---
-      await deleteFileFromS3(existing.fileKey);
+      // --- Replace: delete old S3 object, update DB record ---
+      try {
+        await deleteFileFromS3(existing.fileKey);
+      } catch (deleteErr) {
+        // Log but don't fail the request if old file delete fails
+        console.warn("Failed to delete old S3 file:", deleteErr);
+      }
 
       const updated = await prisma.sheetUpload.update({
         where: { id: existing.id },
@@ -72,20 +76,17 @@ export async function POST(req: NextRequest) {
           fileName: file.name,
           fileUrl,
           fileKey: key,
+          updatedAt: new Date(),
         },
       });
 
       return NextResponse.json(
-        {
-          success: true,
-          replaced: true,
-          data: updated,
-        },
+        { success: true, replaced: true, data: updated },
         { status: 200 },
       );
     }
 
-    // --- No previous record: create a new one ---
+    // --- No existing record: create new ---
     const record = await prisma.sheetUpload.create({
       data: {
         teacherId: teacherId.trim(),
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Optional: list all uploaded sheets
+// List all uploaded sheets
 export async function GET() {
   try {
     const records = await prisma.sheetUpload.findMany({

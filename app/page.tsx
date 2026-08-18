@@ -5,22 +5,61 @@ import { SHEET_TYPES, validateFile } from "@/lib/constants";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 
+interface FileWithType {
+  file: File;
+}
+
 export default function HomePage() {
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
   const [sheetType, setSheetType] = useState<string>(SHEET_TYPES[0]);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<FileWithType[]>([]);
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string>("");
   const [showToast, setShowToast] = useState(false);
-  const [wasReplaced, setWasReplaced] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
-  // إخفاء رسالة النجاح تلقائيًا بعد 5 ثوانٍ
   useEffect(() => {
     if (!showToast) return;
     const timer = setTimeout(() => setShowToast(false), 5000);
     return () => clearTimeout(timer);
   }, [showToast]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files || []);
+    const errors: string[] = [];
+    const valid: FileWithType[] = [];
+
+    for (const f of selected) {
+      const error = validateFile(f);
+      if (error) {
+        errors.push(`${f.name}: ${error}`);
+      } else {
+        const alreadyAdded = files.some(
+          (fw) => fw.file.name === f.name && fw.file.size === f.size,
+        );
+        if (!alreadyAdded) {
+          valid.push({ file: f });
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      setMessage(errors.join("\n"));
+    } else {
+      setMessage("");
+    }
+
+    if (valid.length > 0) {
+      setFiles((prev) => [...prev, ...valid]);
+    }
+
+    e.target.value = "";
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,48 +73,46 @@ export default function HomePage() {
       setMessage("الرجاء إدخال اسم المعلم.");
       return;
     }
-    if (!file) {
-      setMessage("الرجاء اختيار ملف لرفعه.");
+    if (files.length === 0) {
+      setMessage("الرجاء اختيار ملف واحد على الأقل.");
       return;
     }
-    const fileError = validateFile(file);
-    if (fileError) {
-      setMessage(fileError);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("teacherId", teacherId.trim());
-    formData.append("teacherName", teacherName.trim());
-    formData.append("sheetType", sheetType);
-    formData.append("file", file);
 
     try {
       setStatus("loading");
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
 
-      const data = await res.json();
+      const results = await Promise.all(
+        files.map(async ({ file }) => {
+          const formData = new FormData();
+          formData.append("teacherId", teacherId.trim());
+          formData.append("teacherName", teacherName.trim());
+          formData.append("sheetType", sheetType);
+          formData.append("file", file);
 
-      if (!res.ok) {
-        throw new Error(data?.error || "فشل الرفع");
-      }
+          const res = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
 
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || `فشل رفع ${file.name}`);
+          return data;
+        }),
+      );
+
+      const anyReplaced = results.some((r) => r.replaced);
       setStatus("success");
       setMessage("");
-      setWasReplaced(Boolean(data?.replaced));
+      setToastMessage(
+        anyReplaced
+          ? `تم رفع ${files.length} ملف/ملفات — بعضها استبدل ملفات سابقة!`
+          : `تم رفع ${files.length} ملف/ملفات بنجاح!`,
+      );
       setShowToast(true);
       setTeacherId("");
       setTeacherName("");
       setSheetType(SHEET_TYPES[0]);
-      setFile(null);
-      // إعادة تعيين حقل اختيار الملف
-      const fileInput = document.getElementById(
-        "file-input",
-      ) as HTMLInputElement | null;
-      if (fileInput) fileInput.value = "";
+      setFiles([]);
     } catch (err: any) {
       setStatus("error");
       setMessage(err.message || "حدث خطأ ما. الرجاء المحاولة مرة أخرى.");
@@ -84,10 +121,10 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-md">
         <h1 className="mb-1 text-2xl font-semibold text-slate-800">رفع ورقة</h1>
         <p className="mb-6 text-sm text-slate-500">
-          أدخل بياناتك، اختر نوع الورقة، وارفع الملف.
+          أدخل بياناتك، اختر نوع الورقة، وارفع الملفات.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -129,7 +166,7 @@ export default function HomePage() {
             />
           </div>
 
-          {/* نوع الورقة */}
+          {/* نوع الورقة — fixed: size="1" removed, height auto, text wraps */}
           <div>
             <label
               htmlFor="sheetType"
@@ -142,58 +179,142 @@ export default function HomePage() {
               value={sheetType}
               onChange={(e) => setSheetType(e.target.value)}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+              style={{ height: "auto", whiteSpace: "normal" }}
             >
               {SHEET_TYPES.map((type) => (
-                <option key={type} value={type}>
+                <option
+                  key={type}
+                  value={type}
+                  style={{ whiteSpace: "normal" }}
+                >
                   {type}
                 </option>
               ))}
             </select>
+            {/* Show the full selected value below the dropdown */}
+            {sheetType && (
+              <p className="mt-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 leading-relaxed">
+                {sheetType}
+              </p>
+            )}
           </div>
 
-          {/* الملف */}
+          {/* منطقة رفع الملفات */}
           <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              الملفات
+            </label>
             <label
               htmlFor="file-input"
-              className="mb-1 block text-sm font-medium text-slate-700"
+              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-8 text-center transition hover:border-slate-500 hover:bg-slate-50"
             >
-              الملف
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 text-slate-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                />
+              </svg>
+              <span className="text-sm font-medium text-slate-600">
+                اضغط لاختيار الملفات
+              </span>
+              <span className="text-xs text-slate-400">
+                يمكنك اختيار عدة ملفات دفعة واحدة
+              </span>
+              <input
+                id="file-input"
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
             </label>
-            <input
-              id="file-input"
-              type="file"
-              onChange={(e) => {
-                const selected = e.target.files?.[0] || null;
-                if (selected) {
-                  const error = validateFile(selected);
-                  if (error) {
-                    setMessage(error);
-                    setFile(null);
-                    e.target.value = "";
-                    return;
-                  }
-                }
-                setMessage("");
-                setFile(selected);
-              }}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none file:ms-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-200"
-              required
-            />
+            <p className="mt-1 text-xs text-slate-400">
+              الحد الأقصى لحجم كل ملف 5 جيجابايت. ملفات الفيديو غير مسموحة.
+            </p>
           </div>
-          <p className="text-xs text-slate-400">
-            الحد الأقصى لحجم الملف 5 جيجابايت. ملفات الفيديو غير مسموحة.
-          </p>
+
+          {/* قائمة الملفات المختارة */}
+          {files.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-slate-700">
+                الملفات المختارة ({files.length})
+              </p>
+              {files.map((fw, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 shrink-0 text-slate-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                    />
+                  </svg>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-slate-700">
+                      {fw.file.name}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {(fw.file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={status === "loading"}
             className="w-full rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {status === "loading" ? "جاري الرفع..." : "إرسال"}
+            {status === "loading"
+              ? `جاري رفع ${files.length} ملف/ملفات...`
+              : `إرسال${files.length > 0 ? ` (${files.length} ملف)` : ""}`}
           </button>
 
           {message && status === "error" && (
-            <p className="text-sm text-red-600">{message}</p>
+            <p className="whitespace-pre-line text-sm text-red-600">
+              {message}
+            </p>
           )}
         </form>
 
@@ -202,7 +323,7 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* رسالة نجاح مؤقتة (Toast) */}
+      {/* Toast */}
       <div
         className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-300 ${
           showToast
@@ -223,9 +344,7 @@ export default function HomePage() {
               clipRule="evenodd"
             />
           </svg>
-          {wasReplaced
-            ? "تم استبدال الملف السابق بنجاح!"
-            : "تم رفع الملف بنجاح!"}
+          {toastMessage}
         </div>
       </div>
     </main>

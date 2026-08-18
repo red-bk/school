@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { SHEET_TYPES } from "@/lib/constants";
 import type { Prisma } from "@prisma/client";
 
-// جلب بيانات جديدة دائمًا — بدون تخزين مؤقت
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage({
@@ -30,7 +29,7 @@ export default async function AdminPage({
   const [uploads, totalCount] = await Promise.all([
     prisma.sheetUpload.findMany({
       where,
-      orderBy: { createdAt: "desc" }, // من الأحدث إلى الأقدم
+      orderBy: { createdAt: "desc" },
     }),
     prisma.sheetUpload.count(),
   ]);
@@ -87,14 +86,16 @@ export default async function AdminPage({
             />
           </div>
 
+          {/* Filter dropdown — fixed to show full text */}
           <select
             name="type"
             defaultValue={type}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 sm:w-56"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 sm:w-64"
+            style={{ height: "auto", whiteSpace: "normal" }}
           >
             <option value="">جميع أنواع الأوراق</option>
             {SHEET_TYPES.map((t) => (
-              <option key={t} value={t}>
+              <option key={t} value={t} style={{ whiteSpace: "normal" }}>
                 {t}
               </option>
             ))}
@@ -117,6 +118,14 @@ export default async function AdminPage({
           )}
         </form>
 
+        {/* Show active filter label in full */}
+        {type && (
+          <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <span className="font-medium">التصفية الحالية: </span>
+            {type}
+          </p>
+        )}
+
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {uploads.length === 0 ? (
             <p className="p-8 text-center text-sm text-slate-500">
@@ -133,7 +142,7 @@ export default async function AdminPage({
                       الرقم التعريفي للمعلم
                     </th>
                     <th className="px-4 py-3 font-medium">اسم المعلم</th>
-                    <th className="px-4 py-3 font-medium">نوع الملف</th>
+                    <th className="px-4 py-3 font-medium w-48">نوع الملف</th>
                     <th className="px-4 py-3 font-medium">تاريخ الإنشاء</th>
                     <th className="px-4 py-3 font-medium">تاريخ التحديث</th>
                     <th className="px-4 py-3 font-medium text-center">تحميل</th>
@@ -152,7 +161,8 @@ export default async function AdminPage({
                         {row.teacherName}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                        {/* Badge — fixed: whitespace-normal + break-words so long names wrap */}
+                        <span className="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 whitespace-normal break-words leading-relaxed max-w-[180px]">
                           {row.sheetType}
                         </span>
                       </td>
