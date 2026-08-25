@@ -72,9 +72,6 @@ export default async function AdminPage({
               <table className="w-full min-w-[720px] text-right text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                   <tr>
-                    <th className="px-4 py-3 font-medium">
-                      الرقم التعريفي للمعلم
-                    </th>
                     <th className="px-4 py-3 font-medium">اسم المعلم</th>
                     <th className="px-4 py-3 font-medium w-52">نوع الملف</th>
                     <th className="px-4 py-3 font-medium">تاريخ الإنشاء</th>
