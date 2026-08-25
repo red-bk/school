@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { SHEET_TYPES } from "@/lib/constants";
 import type { Prisma } from "@prisma/client";
+import AdminFilters from "./AdminFilters"; // adjust path to match your project
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +27,7 @@ export default async function AdminPage({
   };
 
   const [uploads, totalCount] = await Promise.all([
-    prisma.sheetUpload.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-    }),
+    prisma.sheetUpload.findMany({ where, orderBy: { createdAt: "desc" } }),
     prisma.sheetUpload.count(),
   ]);
 
@@ -39,6 +36,7 @@ export default async function AdminPage({
   return (
     <main className="min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
+        {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-800">
@@ -58,74 +56,10 @@ export default async function AdminPage({
           </a>
         </div>
 
-        {/* شريط البحث والتصفية */}
-        <form
-          method="GET"
-          className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
-        >
-          <div className="relative flex-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              type="text"
-              name="search"
-              defaultValue={search}
-              placeholder="ابحث بالاسم"
-              className="w-full rounded-lg border border-slate-300 py-2 ps-9 pe-3 text-sm outline-none focus:border-slate-500"
-            />
-          </div>
+        {/* Client filters (search + custom dropdown) */}
+        <AdminFilters search={search} type={type} />
 
-          {/* Filter dropdown — fixed to show full text */}
-          <select
-            name="type"
-            defaultValue={type}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 sm:w-64"
-            style={{ height: "auto", whiteSpace: "normal" }}
-          >
-            <option value="">جميع أنواع الأوراق</option>
-            {SHEET_TYPES.map((t) => (
-              <option key={t} value={t} style={{ whiteSpace: "normal" }}>
-                {t}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="submit"
-            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
-            تطبيق
-          </button>
-
-          {hasActiveFilters && (
-            <a
-              href="/admin"
-              className="text-center text-sm font-medium text-slate-500 underline hover:text-slate-700"
-            >
-              مسح
-            </a>
-          )}
-        </form>
-
-        {/* Show active filter label in full */}
-        {type && (
-          <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            <span className="font-medium">التصفية الحالية: </span>
-            {type}
-          </p>
-        )}
-
+        {/* Table */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {uploads.length === 0 ? (
             <p className="p-8 text-center text-sm text-slate-500">
@@ -138,8 +72,11 @@ export default async function AdminPage({
               <table className="w-full min-w-[720px] text-right text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                   <tr>
+                    <th className="px-4 py-3 font-medium">
+                      الرقم التعريفي للمعلم
+                    </th>
                     <th className="px-4 py-3 font-medium">اسم المعلم</th>
-                    <th className="px-4 py-3 font-medium w-48">نوع الملف</th>
+                    <th className="px-4 py-3 font-medium w-52">نوع الملف</th>
                     <th className="px-4 py-3 font-medium">تاريخ الإنشاء</th>
                     <th className="px-4 py-3 font-medium">تاريخ التحديث</th>
                     <th className="px-4 py-3 font-medium text-center">تحميل</th>
@@ -151,12 +88,12 @@ export default async function AdminPage({
                       key={row.id}
                       className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
                     >
-                      <td className="px-4 py-3 text-slate-800">
+                      <td className="px-4 py-3 font-medium text-slate-800">
                         {row.teacherName}
                       </td>
                       <td className="px-4 py-3">
-                        {/* Badge — fixed: whitespace-normal + break-words so long names wrap */}
-                        <span className="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 whitespace-normal break-words leading-relaxed max-w-[180px]">
+                        {/* Badge wraps on long text */}
+                        <span className="inline-block rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 whitespace-normal break-words leading-relaxed max-w-[200px]">
                           {row.sheetType}
                         </span>
                       </td>
