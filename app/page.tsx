@@ -9,6 +9,81 @@ interface FileWithType {
   file: File;
 }
 
+// ────────────────────────────────────────────────
+// Templates — add/remove entries here as needed
+// Files must be placed in /public/templates/
+// ────────────────────────────────────────────────
+const TEMPLATES = [
+  {
+    name: "استمارة التأمل الذاتي",
+    file: "استمارة_التا_مل_الذاتي_.docx",
+    icon: "docx",
+  },
+  {
+    name: "استمارة الخطة العلاجية",
+    file: "استمارة_الخطة_العلاجية_جيهان.docx",
+    icon: "docx",
+  },
+  {
+    name: "استمارة تبادل الزيارات",
+    file: "استمارة_تبادل_زيارات_جيهان_.docx",
+    icon: "docx",
+  },
+  {
+    name: "استمارة الدرس التطبيقي",
+    file: "استمارة_درس_تطبيقي_جيهان.docx",
+    icon: "docx",
+  },
+  // {
+  //   name: "دليل التطوير المهني",
+  //   file: "دليل_التطوير_المهني.pptx",
+  //   icon: "pptx",
+  // },
+];
+
+function FileIcon({ type }: { type: string }) {
+  if (type === "pptx") {
+    return (
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-orange-600"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <path d="M9 13h2a2 2 0 010 4H9v-4zm0 0V9" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4 text-blue-600"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
+      </svg>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
@@ -121,169 +196,204 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-md">
-        <h1 className="mb-1 text-2xl font-semibold text-slate-800">رفع ورقة</h1>
-        <p className="mb-6 text-sm text-slate-500">
-          أدخل بياناتك، اختر نوع الورقة، وارفع الملفات.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* الرقم   */}
-          <div>
-            <label
-              htmlFor="teacherId"
-              className="mb-1 block text-sm font-medium text-slate-700"
+      <div className="w-full max-w-lg space-y-6">
+        {/* ── Templates section ── */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-slate-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
             >
-              الرقم الهوية
-            </label>
-            <input
-              id="teacherId"
-              type="text"
-              value={teacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
-              placeholder="مثال: T-1024"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              required
-            />
-          </div>
-
-          {/* اسم المعلم */}
-          <div>
-            <label
-              htmlFor="teacherName"
-              className="mb-1 block text-sm font-medium text-slate-700"
-            >
-              اسم المعلم
-            </label>
-            <input
-              id="teacherName"
-              type="text"
-              value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
-              placeholder="مثال: أحمد محمد"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              required
-            />
-          </div>
-
-          {/* نوع الورقة — fixed: size="1" removed, height auto, text wraps */}
-          <div>
-            <label
-              htmlFor="sheetType"
-              className="mb-1 block text-sm font-medium text-slate-700"
-            >
-              نوع الورقة
-            </label>
-            <select
-              id="sheetType"
-              value={sheetType}
-              onChange={(e) => setSheetType(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-              style={{ height: "auto", whiteSpace: "normal" }}
-            >
-              {SHEET_TYPES.map((type) => (
-                <option
-                  key={type}
-                  value={type}
-                  style={{ whiteSpace: "normal" }}
-                >
-                  {type}
-                </option>
-              ))}
-            </select>
-            {/* Show the full selected value below the dropdown */}
-            {sheetType && (
-              <p className="mt-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 leading-relaxed">
-                {sheetType}
-              </p>
-            )}
-          </div>
-
-          {/* منطقة رفع الملفات */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              الملفات
-            </label>
-            <label
-              htmlFor="file-input"
-              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-8 text-center transition hover:border-slate-500 hover:bg-slate-50"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8 text-slate-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                />
-              </svg>
-              <span className="text-sm font-medium text-slate-600">
-                اضغط لاختيار الملفات
-              </span>
-              <span className="text-xs text-slate-400">
-                يمكنك اختيار عدة ملفات دفعة واحدة
-              </span>
-              <input
-                id="file-input"
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                className="hidden"
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
               />
-            </label>
-            <p className="mt-1 text-xs text-slate-400">
-              الحد الأقصى لحجم كل ملف 5 جيجابايت. ملفات الفيديو غير مسموحة.
-            </p>
+            </svg>
+            <h2 className="text-base font-semibold text-slate-800">
+              النماذج المتاحة
+            </h2>
           </div>
-
-          {/* قائمة الملفات المختارة */}
-          {files.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-slate-700">
-                الملفات المختارة ({files.length})
-              </p>
-              {files.map((fw, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+          <p className="mb-3 text-xs text-slate-500">
+            اضغط على تحميل للحصول على نسخة من النموذج.
+          </p>
+          <ul className="space-y-2">
+            {TEMPLATES.map((tpl) => (
+              <li
+                key={tpl.file}
+                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-100"
+              >
+                <FileIcon type={tpl.icon} />
+                <span className="flex-1 text-sm font-medium text-slate-700 leading-snug text-right">
+                  {tpl.name}
+                </span>
+                <a
+                  href={`/templates/${tpl.file}`}
+                  download={tpl.file}
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 shrink-0 text-slate-400"
+                    className="h-3.5 w-3.5"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    strokeWidth={2}
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                      d="M12 3v12m0 0l-4-4m4 4l4-4M4 20h16"
                     />
                   </svg>
+                  تحميل
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-slate-700">
-                      {fw.file.name}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {(fw.file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
+        {/* ── Upload form (unchanged) ── */}
+        <div className="rounded-2xl bg-white p-8 shadow-md">
+          <h1 className="mb-1 text-2xl font-semibold text-slate-800">
+            رفع ورقة
+          </h1>
+          <p className="mb-6 text-sm text-slate-500">
+            أدخل بياناتك، اختر نوع الورقة، وارفع الملفات.
+          </p>
 
-                  <button
-                    type="button"
-                    onClick={() => removeFile(index)}
-                    className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* الرقم   */}
+            <div>
+              <label
+                htmlFor="teacherId"
+                className="mb-1 block text-sm font-medium text-slate-700"
+              >
+                الرقم الهوية
+              </label>
+              <input
+                id="teacherId"
+                type="text"
+                value={teacherId}
+                onChange={(e) => setTeacherId(e.target.value)}
+                placeholder="مثال: T-1024"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                required
+              />
+            </div>
+
+            {/* اسم المعلم */}
+            <div>
+              <label
+                htmlFor="teacherName"
+                className="mb-1 block text-sm font-medium text-slate-700"
+              >
+                اسم المعلم
+              </label>
+              <input
+                id="teacherName"
+                type="text"
+                value={teacherName}
+                onChange={(e) => setTeacherName(e.target.value)}
+                placeholder="مثال: أحمد محمد"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                required
+              />
+            </div>
+
+            {/* نوع الورقة — fixed: size="1" removed, height auto, text wraps */}
+            <div>
+              <label
+                htmlFor="sheetType"
+                className="mb-1 block text-sm font-medium text-slate-700"
+              >
+                نوع الورقة
+              </label>
+              <select
+                id="sheetType"
+                value={sheetType}
+                onChange={(e) => setSheetType(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+                style={{ height: "auto", whiteSpace: "normal" }}
+              >
+                {SHEET_TYPES.map((type) => (
+                  <option
+                    key={type}
+                    value={type}
+                    style={{ whiteSpace: "normal" }}
+                  >
+                    {type}
+                  </option>
+                ))}
+              </select>
+              {/* Show the full selected value below the dropdown */}
+              {sheetType && (
+                <p className="mt-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 leading-relaxed">
+                  {sheetType}
+                </p>
+              )}
+            </div>
+
+            {/* منطقة رفع الملفات */}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                الملفات
+              </label>
+              <label
+                htmlFor="file-input"
+                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-8 text-center transition hover:border-slate-500 hover:bg-slate-50"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-slate-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-slate-600">
+                  اضغط لاختيار الملفات
+                </span>
+                <span className="text-xs text-slate-400">
+                  يمكنك اختيار عدة ملفات دفعة واحدة
+                </span>
+                <input
+                  id="file-input"
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              <p className="mt-1 text-xs text-slate-400">
+                الحد الأقصى لحجم كل ملف 5 جيجابايت. ملفات الفيديو غير مسموحة.
+              </p>
+            </div>
+
+            {/* قائمة الملفات المختارة */}
+            {files.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">
+                  الملفات المختارة ({files.length})
+                </p>
+                {files.map((fw, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
+                      className="h-5 w-5 shrink-0 text-slate-400"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -291,36 +401,66 @@ export default function HomePage() {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
+                        strokeWidth={1.5}
+                        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
                       />
                     </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={status === "loading"}
-            className="w-full rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {status === "loading"
-              ? `جاري رفع ${files.length} ملف/ملفات...`
-              : `إرسال${files.length > 0 ? ` (${files.length} ملف)` : ""}`}
-          </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-slate-700">
+                        {fw.file.name}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {(fw.file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
 
-          {message && status === "error" && (
-            <p className="whitespace-pre-line text-sm text-red-600">
-              {message}
-            </p>
-          )}
-        </form>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-        <p className="mt-5 text-center text-sm text-slate-500">
-          سيتم استبدال أي ملف سابق من نفس النوع تلقائيًا عند رفع ملف جديد.
-        </p>
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="w-full rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {status === "loading"
+                ? `جاري رفع ${files.length} ملف/ملفات...`
+                : `إرسال${files.length > 0 ? ` (${files.length} ملف)` : ""}`}
+            </button>
+
+            {message && status === "error" && (
+              <p className="whitespace-pre-line text-sm text-red-600">
+                {message}
+              </p>
+            )}
+          </form>
+
+          <p className="mt-5 text-center text-sm text-slate-500">
+            سيتم استبدال أي ملف سابق من نفس النوع تلقائيًا عند رفع ملف جديد.
+          </p>
+        </div>
       </div>
 
       {/* Toast */}
