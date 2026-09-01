@@ -19,6 +19,7 @@ export default async function AdminPage({
             OR: [
               { teacherName: { contains: search, mode: "insensitive" } },
               { teacherId: { contains: search, mode: "insensitive" } },
+              { sheetType: { contains: search, mode: "insensitive" } }, // ← added
             ],
           }
         : {},

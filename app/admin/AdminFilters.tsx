@@ -71,7 +71,7 @@ export default function AdminFilters({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && apply()}
-            placeholder="ابحث بالاسم أو الرقم التعريفي..."
+            placeholder="ابحث بالاسم أو الرقم التعريفي أو نوع الورقة..."
             className="w-full rounded-lg border border-slate-300 py-2 ps-9 pe-3 text-sm outline-none focus:border-slate-500"
           />
         </div>
