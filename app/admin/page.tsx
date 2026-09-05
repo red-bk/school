@@ -1,36 +1,46 @@
-import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
-import AdminFilters from "./AdminFilters"; // adjust path to match your project
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useState, useEffect } from "react";
+import AdminFilters from "./AdminFilters";
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; type?: string };
-}) {
-  const search = searchParams.search?.trim() || "";
-  const type = searchParams.type?.trim() || "";
+interface Upload {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  sheetType: string;
+  fileName: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-  const where: Prisma.SheetUploadWhereInput = {
-    AND: [
-      search
-        ? {
-            OR: [
-              { teacherName: { contains: search, mode: "insensitive" } },
-              { teacherId: { contains: search, mode: "insensitive" } },
-              { sheetType: { contains: search, mode: "insensitive" } }, // ← added
-            ],
-          }
-        : {},
-      type ? { sheetType: type } : {},
-    ],
-  };
+export default function AdminPage() {
+  const [uploads, setUploads] = useState<Upload[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState("");
 
-  const [uploads, totalCount] = await Promise.all([
-    prisma.sheetUpload.findMany({ where, orderBy: { createdAt: "desc" } }),
-    prisma.sheetUpload.count(),
-  ]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (type) params.set("type", type); // "" means all — not sent
+
+    fetch(`/api/upload?${params.toString()}`, {
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setUploads(data.uploads ?? []);
+        setTotalCount(data.totalCount ?? 0);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [search, type]);
 
   const hasActiveFilters = Boolean(search || type);
 
@@ -57,12 +67,16 @@ export default async function AdminPage({
           </a>
         </div>
 
-        {/* Client filters (search + custom dropdown) */}
-        <AdminFilters search={search} type={type} />
+        {/* Filters — no URL params, pure state */}
+        <AdminFilters onSearchChange={setSearch} onTypeChange={setType} />
 
         {/* Table */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          {uploads.length === 0 ? (
+          {loading ? (
+            <p className="p-8 text-center text-sm text-slate-400">
+              جاري التحميل...
+            </p>
+          ) : uploads.length === 0 ? (
             <p className="p-8 text-center text-sm text-slate-500">
               {hasActiveFilters
                 ? "لا توجد أوراق مطابقة لبحثك أو التصفية المحددة."
@@ -90,7 +104,6 @@ export default async function AdminPage({
                         {row.teacherName}
                       </td>
                       <td className="px-4 py-3">
-                        {/* Badge wraps on long text */}
                         <span className="inline-block rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 whitespace-normal break-words leading-relaxed max-w-[200px]">
                           {row.sheetType}
                         </span>

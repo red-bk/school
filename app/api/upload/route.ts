@@ -112,14 +112,31 @@ export async function POST(req: NextRequest) {
 }
 
 // List all uploaded sheets
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const records = await prisma.sheetUpload.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    return NextResponse.json({ success: true, data: records });
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search")?.trim() || "";
+    const type = searchParams.get("type")?.trim() || "";
+
+    const where: any = {
+      AND: [
+        search
+          ? {
+              OR: [{ teacherName: { contains: search, mode: "insensitive" } }],
+            }
+          : {},
+        type ? { sheetType: type } : {},
+      ],
+    };
+
+    const [uploads, totalCount] = await Promise.all([
+      prisma.sheetUpload.findMany({ where, orderBy: { createdAt: "desc" } }),
+      prisma.sheetUpload.count(),
+    ]);
+
+    return NextResponse.json({ success: true, uploads, totalCount });
   } catch (error) {
-    console.error("Fetch error:", error);
+    console.error("Admin fetch error:", error);
     return NextResponse.json({ error: "فشل في جلب السجلات" }, { status: 500 });
   }
 }

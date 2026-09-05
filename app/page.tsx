@@ -1,19 +1,82 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, useMemo } from "react";
 import { SHEET_TYPES, validateFile } from "@/lib/constants";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
+type ToastType = "success" | "error";
 
 interface FileWithType {
   file: File;
 }
 
+interface TemplateFile {
+  name: string;
+  file: string;
+  icon: string;
+  restricted?: boolean; // requires the access code to download
+}
+
+interface TemplateGroup extends TemplateFile {
+  children?: TemplateFile[];
+}
+
 // ────────────────────────────────────────────────
-// Templates — add/remove entries here as needed
-// Files must be placed in /public/templates/
+// Templates — add/remove entries here as needed.
+// Unrestricted files must be placed in /public/templates/
+// Restricted files (restricted: true) must be placed in
+// /restricted-templates/ (outside /public) and served only
+// through /api/restricted-download after a code check.
 // ────────────────────────────────────────────────
-const TEMPLATES = [
+const MAIN_TEMPLATE: TemplateGroup = {
+  name: "دليل التطوير المهني",
+  file: "دليل_التطوير_المهني.pptx",
+  icon: "pptx",
+  children: [
+    {
+      name: "بيانات معلمات الفريق  على مستوى التخصص",
+      file: "بيانات معلمات الفريق  على مستوى التخصص.docx",
+      icon: "docx",
+    },
+    {
+      name: "بيانات معلمات الفريق  على مستوى المرحلة",
+      file: "بيانات معلمات الفريق  على مستوى المرحلة.docx",
+      icon: "docx",
+    },
+    {
+      name: "تقرير تنفيذ برنامج حسب التخصص",
+      file: "تقرير تنفيذ برنامج حسب التخصص.docx",
+      icon: "docx",
+    },
+    {
+      name: "تقرير تنفيذ برنامج حسب المرحلة",
+      file: "تقرير تنفيذ برنامج حسب المرحلة.docx",
+      icon: "docx",
+    },
+    {
+      name: "تقرير تنفيذ مجتمع تعلم مهني حسب التخصص",
+      file: "تقرير تنفيذ مجتمع تعلم مهني حسب التخصص.docx",
+      icon: "docx",
+    },
+    {
+      name: "تقرير تنفيذ مجتمع تعلم مهني حسب المرحلة",
+      file: "تقرير تنفيذ مجتمع تعلم مهني حسب المرحلة.docx",
+      icon: "docx",
+    },
+    {
+      name: "خطة الفريق  حسب التخصص",
+      file: "خطة الفريق  حسب التخصص.docx",
+      icon: "docx",
+    },
+    {
+      name: "خطة الفريق  حسب المرحلة",
+      file: "خطة الفريق  حسب المرحلة.docx",
+      icon: "docx",
+    },
+  ],
+};
+
+const TEMPLATES: TemplateFile[] = [
   {
     name: "استمارة التأمل الذاتي",
     file: "استمارة_التا_مل_الذاتي_.docx",
@@ -34,11 +97,12 @@ const TEMPLATES = [
     file: "استمارة_درس_تطبيقي_جيهان.docx",
     icon: "docx",
   },
-  // {
-  //   name: "دليل التطوير المهني",
-  //   file: "دليل_التطوير_المهني.pptx",
-  //   icon: "pptx",
-  // },
+  {
+    name: " حصر الكفاءات من المعلمين",
+    file: "حصر الكفاءات من المعلمين.docx",
+    icon: "docx",
+    restricted: true,
+  },
 ];
 
 function FileIcon({ type }: { type: string }) {
@@ -84,6 +148,206 @@ function FileIcon({ type }: { type: string }) {
   );
 }
 
+function DownloadIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 3v12m0 0l-4-4m4 4l4-4M4 20h16"
+      />
+    </svg>
+  );
+}
+
+function DownloadLink({
+  file,
+  restricted,
+  onError,
+}: {
+  file: string;
+  restricted?: boolean;
+  onError: (message: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  if (!restricted) {
+    return (
+      <a
+        href={`/templates/${file}`}
+        download={file}
+        onClick={(e) => e.stopPropagation()}
+        className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
+      >
+        <DownloadIcon />
+        تحميل
+      </a>
+    );
+  }
+
+  async function handleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    const code = window.prompt("هذا الملف محمي، أدخل كلمة السر:");
+    if (!code) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/restricted-download?file=${encodeURIComponent(
+          file,
+        )}&code=${encodeURIComponent(code)}`,
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "تعذر تحميل الملف");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      onError(err.message || "كلمة السر غير صحيحة");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 disabled:opacity-60"
+    >
+      <DownloadIcon />
+      {loading ? "..." : "تحميل"}
+    </button>
+  );
+}
+
+function MainTemplateCard({
+  template,
+  onError,
+}: {
+  template: TemplateGroup;
+  onError: (message: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const filteredChildren = useMemo(() => {
+    const children = template.children || [];
+    const q = query.trim().toLowerCase();
+    if (!q) return children;
+    return children.filter((c) => c.name.toLowerCase().includes(q));
+  }, [query, template.children]);
+
+  return (
+    <li className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-right transition hover:bg-slate-100"
+      >
+        <FileIcon type={template.icon} />
+        <span className="flex-1 text-sm font-medium leading-snug text-slate-700">
+          {template.name}
+        </span>
+        <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+          {template.children?.length ?? 0} ملف
+        </span>
+        <DownloadLink
+          file={template.file}
+          restricted={template.restricted}
+          onError={onError}
+        />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+            expanded ? "rotate-180" : ""
+          }`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-slate-200 bg-white p-3">
+          <div className="relative mb-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ابحث باسم الملف..."
+              className="w-full rounded-lg border border-slate-300 py-2 ps-9 pe-3 text-sm outline-none focus:border-slate-500"
+            />
+          </div>
+
+          {filteredChildren.length === 0 ? (
+            <p className="py-4 text-center text-xs text-slate-400">
+              لا توجد ملفات مطابقة لبحثك.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {filteredChildren.map((child) => (
+                <li
+                  key={child.file}
+                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-100"
+                >
+                  <FileIcon type={child.icon} />
+                  <span className="flex-1 text-right text-sm font-medium leading-snug text-slate-700">
+                    {child.name}
+                  </span>
+                  <DownloadLink
+                    file={child.file}
+                    restricted={child.restricted}
+                    onError={onError}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
 export default function HomePage() {
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
@@ -91,14 +355,26 @@ export default function HomePage() {
   const [files, setFiles] = useState<FileWithType[]>([]);
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string>("");
+
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<ToastType>("success");
 
   useEffect(() => {
     if (!showToast) return;
     const timer = setTimeout(() => setShowToast(false), 5000);
     return () => clearTimeout(timer);
   }, [showToast]);
+
+  function showToastWith(text: string, type: ToastType = "success") {
+    setToastMessage(text);
+    setToastType(type);
+    setShowToast(true);
+  }
+
+  function handleRestrictedDownloadError(msg: string) {
+    showToastWith(msg, "error");
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files || []);
@@ -178,12 +454,12 @@ export default function HomePage() {
       const anyReplaced = results.some((r) => r.replaced);
       setStatus("success");
       setMessage("");
-      setToastMessage(
+      showToastWith(
         anyReplaced
           ? `تم رفع ${files.length} ملف/ملفات — بعضها استبدل ملفات سابقة!`
           : `تم رفع ${files.length} ملف/ملفات بنجاح!`,
+        "success",
       );
-      setShowToast(true);
       setTeacherId("");
       setTeacherName("");
       setSheetType(SHEET_TYPES[0]);
@@ -219,45 +495,36 @@ export default function HomePage() {
             </h2>
           </div>
           <p className="mb-3 text-xs text-slate-500">
-            اضغط على تحميل للحصول على نسخة من النموذج.
+            اضغط على تحميل للحصول على نسخة من النموذج، أو اضغط على دليل التطوير
+            المهني لعرض الملفات المرتبطة به والبحث بينها. الملفات المحمية تتطلب
+            كلمة سر عند التحميل.
           </p>
           <ul className="space-y-2">
+            <MainTemplateCard
+              template={MAIN_TEMPLATE}
+              onError={handleRestrictedDownloadError}
+            />
+
             {TEMPLATES.map((tpl) => (
               <li
                 key={tpl.file}
                 className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-100"
               >
                 <FileIcon type={tpl.icon} />
-                <span className="flex-1 text-sm font-medium text-slate-700 leading-snug text-right">
+                <span className="flex-1 text-right text-sm font-medium leading-snug text-slate-700">
                   {tpl.name}
                 </span>
-                <a
-                  href={`/templates/${tpl.file}`}
-                  download={tpl.file}
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3v12m0 0l-4-4m4 4l4-4M4 20h16"
-                    />
-                  </svg>
-                  تحميل
-                </a>
+                <DownloadLink
+                  file={tpl.file}
+                  restricted={tpl.restricted}
+                  onError={handleRestrictedDownloadError}
+                />
               </li>
             ))}
           </ul>
         </div>
 
-        {/* ── Upload form (unchanged) ── */}
+        {/* ── Upload form ── */}
         <div className="rounded-2xl bg-white p-8 shadow-md">
           <h1 className="mb-1 text-2xl font-semibold text-slate-800">
             رفع ورقة
@@ -267,7 +534,6 @@ export default function HomePage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* الرقم   */}
             <div>
               <label
                 htmlFor="teacherId"
@@ -286,7 +552,6 @@ export default function HomePage() {
               />
             </div>
 
-            {/* اسم المعلم */}
             <div>
               <label
                 htmlFor="teacherName"
@@ -305,7 +570,6 @@ export default function HomePage() {
               />
             </div>
 
-            {/* نوع الورقة — fixed: size="1" removed, height auto, text wraps */}
             <div>
               <label
                 htmlFor="sheetType"
@@ -330,7 +594,6 @@ export default function HomePage() {
                   </option>
                 ))}
               </select>
-              {/* Show the full selected value below the dropdown */}
               {sheetType && (
                 <p className="mt-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 leading-relaxed">
                   {sheetType}
@@ -338,7 +601,6 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* منطقة رفع الملفات */}
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 الملفات
@@ -380,7 +642,6 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* قائمة الملفات المختارة */}
             {files.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-700">
@@ -463,7 +724,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Toast */}
+      {/* Toast — color-coded by type */}
       <div
         className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-300 ${
           showToast
@@ -471,19 +732,38 @@ export default function HomePage() {
             : "pointer-events-none translate-y-4 opacity-0"
         }`}
       >
-        <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="h-5 w-5 text-green-400"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-              clipRule="evenodd"
-            />
-          </svg>
+        <div
+          className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${
+            toastType === "error" ? "bg-red-600" : "bg-slate-800"
+          }`}
+        >
+          {toastType === "error" ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-5 w-5 shrink-0"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-11a1 1 0 011 1v3a1 1 0 11-2 0V8a1 1 0 011-1zm0 8a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-5 w-5 shrink-0 text-green-400"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
           {toastMessage}
         </div>
       </div>
