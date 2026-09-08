@@ -354,7 +354,7 @@ function MainTemplateCard({
 export default function HomePage() {
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
-  const [sheetType, setSheetType] = useState<string>();
+  const [sheetType, setSheetType] = useState<string>("");
   const [files, setFiles] = useState<FileWithType[]>([]);
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string>("");

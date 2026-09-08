@@ -95,21 +95,21 @@ const ALL_ITEMS: string[] = ENTRIES.flatMap((e) =>
 );
 
 export default function SheetTypePicker({
-  value,
+  value = "",
   onChange,
 }: {
-  value: string;
+  value?: string;
   onChange: (v: string) => void;
 }) {
-  const [inputValue, setInputValue] = useState(value);
+  const [inputValue, setInputValue] = useState("");
   const [listOpen, setListOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Keep input in sync when value changes externally (e.g. reset)
+  // Only clear input when value is reset externally (e.g. after form submit)
   useEffect(() => {
-    setInputValue(value);
+    if (!value) setInputValue("");
   }, [value]);
 
   // Close list on outside click — restore selected label
@@ -127,7 +127,7 @@ export default function SheetTypePicker({
     return () => document.removeEventListener("mousedown", handler);
   }, [value]);
 
-  const isSearching = inputValue?.trim()?.length > 0 && inputValue !== value;
+  const isSearching = inputValue.trim().length > 0 && inputValue !== value;
 
   // Flat filtered results when searching
   const searchResults = useMemo(() => {
