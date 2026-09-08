@@ -409,6 +409,11 @@ export default function HomePage() {
       setMessage("الرجاء إدخال اسم المعلم.");
       return;
     }
+    if (!sheetType) {
+      setMessage("الرجاء اختيار نوع الورقة.");
+      return;
+    }
+
     if (files.length === 0) {
       setMessage("الرجاء اختيار ملف واحد على الأقل.");
       return;
@@ -421,7 +426,7 @@ export default function HomePage() {
           const formData = new FormData();
           formData.append("teacherId", teacherId.trim());
           formData.append("teacherName", teacherName.trim());
-          formData.append("sheetType", sheetType);
+          formData.append("sheetType", sheetType as string);
           formData.append("file", file);
           const res = await fetch("/api/upload", {
             method: "POST",
