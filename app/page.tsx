@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, useEffect, useMemo } from "react";
+import SheetTypePicker from "./SheetTypePicker";
 import { SHEET_TYPES, validateFile } from "@/lib/constants";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
@@ -20,7 +21,6 @@ interface TemplateFile {
 interface TemplateGroup extends TemplateFile {
   children?: TemplateFile[];
 }
-
 // ────────────────────────────────────────────────
 // Templates — add/remove entries here as needed.
 // Unrestricted files must be placed in /public/templates/
@@ -184,7 +184,7 @@ function DownloadLink({
         href={`/templates/${file}`}
         download={file}
         onClick={(e) => e.stopPropagation()}
-        className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700"
+        className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 sm:w-auto"
       >
         <DownloadIcon />
         تحميل
@@ -196,20 +196,15 @@ function DownloadLink({
     e.stopPropagation();
     const code = window.prompt("هذا الملف محمي، أدخل كلمة السر:");
     if (!code) return;
-
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/restricted-download?file=${encodeURIComponent(
-          file,
-        )}&code=${encodeURIComponent(code)}`,
+        `/api/restricted-download?file=${encodeURIComponent(file)}&code=${encodeURIComponent(code)}`,
       );
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || "تعذر تحميل الملف");
       }
-
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -231,7 +226,7 @@ function DownloadLink({
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 disabled:opacity-60"
+      className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 disabled:opacity-60 sm:w-auto"
     >
       <DownloadIcon />
       {loading ? "..." : "تحميل"}
@@ -258,41 +253,48 @@ function MainTemplateCard({
 
   return (
     <li className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-right transition hover:bg-slate-100"
-      >
-        <FileIcon type={template.icon} />
-        <span className="flex-1 text-sm font-medium leading-snug text-slate-700">
-          {template.name}
-        </span>
-        <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-          {template.children?.length ?? 0} ملف
-        </span>
-        <DownloadLink
-          file={template.file}
-          restricted={template.restricted}
-          onError={onError}
-        />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+      <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3 sm:py-2.5">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-3 text-right"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
+          <FileIcon type={template.icon} />
+          <span className="min-w-0 flex-1 break-words text-sm font-medium leading-snug text-slate-700">
+            {template.name}
+          </span>
+          <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+            {template.children?.length ?? 0} ملف
+          </span>
+        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <DownloadLink
+            file={template.file}
+            restricted={template.restricted}
+            onError={onError}
           />
-        </svg>
-      </button>
-
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
       {expanded && (
         <div className="border-t border-slate-200 bg-white p-3">
           <div className="relative mb-2">
@@ -317,7 +319,6 @@ function MainTemplateCard({
               className="w-full rounded-lg border border-slate-300 py-2 ps-9 pe-3 text-sm outline-none focus:border-slate-500"
             />
           </div>
-
           {filteredChildren.length === 0 ? (
             <p className="py-4 text-center text-xs text-slate-400">
               لا توجد ملفات مطابقة لبحثك.
@@ -327,12 +328,14 @@ function MainTemplateCard({
               {filteredChildren.map((child) => (
                 <li
                   key={child.file}
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-100"
+                  className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3"
                 >
-                  <FileIcon type={child.icon} />
-                  <span className="flex-1 text-right text-sm font-medium leading-snug text-slate-700">
-                    {child.name}
-                  </span>
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <FileIcon type={child.icon} />
+                    <span className="min-w-0 flex-1 break-words text-right text-sm font-medium leading-snug text-slate-700">
+                      {child.name}
+                    </span>
+                  </div>
                   <DownloadLink
                     file={child.file}
                     restricted={child.restricted}
@@ -351,11 +354,10 @@ function MainTemplateCard({
 export default function HomePage() {
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
-  const [sheetType, setSheetType] = useState<string>(SHEET_TYPES[0]);
+  const [sheetType, setSheetType] = useState<string>();
   const [files, setFiles] = useState<FileWithType[]>([]);
   const [status, setStatus] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string>("");
-
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<ToastType>("success");
@@ -372,15 +374,10 @@ export default function HomePage() {
     setShowToast(true);
   }
 
-  function handleRestrictedDownloadError(msg: string) {
-    showToastWith(msg, "error");
-  }
-
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files || []);
     const errors: string[] = [];
     const valid: FileWithType[] = [];
-
     for (const f of selected) {
       const error = validateFile(f);
       if (error) {
@@ -389,22 +386,11 @@ export default function HomePage() {
         const alreadyAdded = files.some(
           (fw) => fw.file.name === f.name && fw.file.size === f.size,
         );
-        if (!alreadyAdded) {
-          valid.push({ file: f });
-        }
+        if (!alreadyAdded) valid.push({ file: f });
       }
     }
-
-    if (errors.length > 0) {
-      setMessage(errors.join("\n"));
-    } else {
-      setMessage("");
-    }
-
-    if (valid.length > 0) {
-      setFiles((prev) => [...prev, ...valid]);
-    }
-
+    setMessage(errors.length > 0 ? errors.join("\n") : "");
+    if (valid.length > 0) setFiles((prev) => [...prev, ...valid]);
     e.target.value = "";
   }
 
@@ -415,7 +401,6 @@ export default function HomePage() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage("");
-
     if (!teacherId.trim()) {
       setMessage("الرجاء إدخال رقم الهوية .");
       return;
@@ -431,7 +416,6 @@ export default function HomePage() {
 
     try {
       setStatus("loading");
-
       const results = await Promise.all(
         files.map(async ({ file }) => {
           const formData = new FormData();
@@ -439,18 +423,15 @@ export default function HomePage() {
           formData.append("teacherName", teacherName.trim());
           formData.append("sheetType", sheetType);
           formData.append("file", file);
-
           const res = await fetch("/api/upload", {
             method: "POST",
             body: formData,
           });
-
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || `فشل رفع ${file.name}`);
           return data;
         }),
       );
-
       const anyReplaced = results.some((r) => r.replaced);
       setStatus("success");
       setMessage("");
@@ -471,10 +452,10 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main className="flex min-h-screen items-center justify-center overflow-x-hidden px-4 py-10">
       <div className="w-full max-w-lg space-y-6">
         {/* ── Templates section ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -502,22 +483,23 @@ export default function HomePage() {
           <ul className="space-y-2">
             <MainTemplateCard
               template={MAIN_TEMPLATE}
-              onError={handleRestrictedDownloadError}
+              onError={(msg) => showToastWith(msg, "error")}
             />
-
             {TEMPLATES.map((tpl) => (
               <li
                 key={tpl.file}
-                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-100"
+                className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 transition hover:border-slate-200 hover:bg-slate-100 sm:flex-row sm:items-center sm:gap-3"
               >
-                <FileIcon type={tpl.icon} />
-                <span className="flex-1 text-right text-sm font-medium leading-snug text-slate-700">
-                  {tpl.name}
-                </span>
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <FileIcon type={tpl.icon} />
+                  <span className="min-w-0 flex-1 break-words text-right text-sm font-medium leading-snug text-slate-700">
+                    {tpl.name}
+                  </span>
+                </div>
                 <DownloadLink
                   file={tpl.file}
                   restricted={tpl.restricted}
-                  onError={handleRestrictedDownloadError}
+                  onError={(msg) => showToastWith(msg, "error")}
                 />
               </li>
             ))}
@@ -525,7 +507,7 @@ export default function HomePage() {
         </div>
 
         {/* ── Upload form ── */}
-        <div className="rounded-2xl bg-white p-8 shadow-md">
+        <div className="rounded-2xl bg-white p-6 shadow-md sm:p-8">
           <h1 className="mb-1 text-2xl font-semibold text-slate-800">
             رفع ورقة
           </h1>
@@ -570,35 +552,12 @@ export default function HomePage() {
               />
             </div>
 
+            {/* ── Grouped searchable sheet type picker ── */}
             <div>
-              <label
-                htmlFor="sheetType"
-                className="mb-1 block text-sm font-medium text-slate-700"
-              >
+              <label className="mb-1 block text-sm font-medium text-slate-700">
                 نوع الورقة
               </label>
-              <select
-                id="sheetType"
-                value={sheetType}
-                onChange={(e) => setSheetType(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
-                style={{ height: "auto", whiteSpace: "normal" }}
-              >
-                {SHEET_TYPES.map((type) => (
-                  <option
-                    key={type}
-                    value={type}
-                    style={{ whiteSpace: "normal" }}
-                  >
-                    {type}
-                  </option>
-                ))}
-              </select>
-              {sheetType && (
-                <p className="mt-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600 leading-relaxed">
-                  {sheetType}
-                </p>
-              )}
+              <SheetTypePicker value={sheetType} onChange={setSheetType} />
             </div>
 
             <div>
@@ -666,7 +625,6 @@ export default function HomePage() {
                         d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
                       />
                     </svg>
-
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-medium text-slate-700">
                         {fw.file.name}
@@ -675,7 +633,6 @@ export default function HomePage() {
                         {(fw.file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
-
                     <button
                       type="button"
                       onClick={() => removeFile(index)}
@@ -724,18 +681,12 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Toast — color-coded by type */}
+      {/* Toast */}
       <div
-        className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-300 ${
-          showToast
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-4 opacity-0"
-        }`}
+        className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-300 ${showToast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}
       >
         <div
-          className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${
-            toastType === "error" ? "bg-red-600" : "bg-slate-800"
-          }`}
+          className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toastType === "error" ? "bg-red-600" : "bg-slate-800"}`}
         >
           {toastType === "error" ? (
             <svg
