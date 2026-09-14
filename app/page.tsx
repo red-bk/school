@@ -183,19 +183,27 @@ function DownloadLink({
           e.stopPropagation();
           setLoading(true);
           try {
+            // Download parent file
+            const parentLink = document.createElement("a");
+            parentLink.href = `/templates/${encodeURIComponent(file)}`;
+            parentLink.download = file;
+            document.body.appendChild(parentLink);
+            parentLink.click();
+            document.body.removeChild(parentLink);
+
+            // Download all children (no wait)
             for (const child of children) {
               const link = document.createElement("a");
-              link.href = `templates/${encodeURIComponent(child.file)}`;
+              link.href = `/templates/${encodeURIComponent(child.file)}`;
               link.download = child.file;
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
-              // Small delay between downloads
-              await new Promise((resolve) => setTimeout(resolve, 200));
             }
+
+            setLoading(false);
           } catch (err: any) {
             onError(err.message || "فشل تحميل الملفات");
-          } finally {
             setLoading(false);
           }
         }}
@@ -203,7 +211,7 @@ function DownloadLink({
         className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 disabled:opacity-60 sm:w-auto"
       >
         <DownloadIcon />
-        {loading ? "..." : `تحميل ${children.length} ملف`}
+        {loading ? "..." : `تحميل ${children.length + 1} ملف`}
       </button>
     );
   }
