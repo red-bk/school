@@ -181,7 +181,7 @@ function DownloadLink({
   if (!restricted) {
     return (
       <a
-        href={`/templates/${file}`}
+        href={`public//templates/${file}`}
         download={file}
         onClick={(e) => e.stopPropagation()}
         className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 sm:w-auto"
