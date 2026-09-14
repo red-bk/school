@@ -30,7 +30,7 @@ interface TemplateGroup extends TemplateFile {
 // ────────────────────────────────────────────────
 const MAIN_TEMPLATE: TemplateGroup = {
   name: "دليل التطوير المهني",
-  file: "دليل_التطوير_المهني.pptx",
+  file: "دليل التطوير المهني.pptx",
   icon: "pptx",
   children: [
     {
@@ -79,22 +79,22 @@ const MAIN_TEMPLATE: TemplateGroup = {
 const TEMPLATES: TemplateFile[] = [
   {
     name: "استمارة التأمل الذاتي",
-    file: "استمارة_التا_مل_الذاتي_.docx",
+    file: "استمارة التأمل الذاتي .docx", // ← spaces, not underscores
     icon: "docx",
   },
   {
     name: "استمارة الخطة العلاجية",
-    file: "استمارة_الخطة_العلاجية_جيهان.docx",
+    file: "استمارة الخطة العلاجية .docx",
     icon: "docx",
   },
   {
     name: "استمارة تبادل الزيارات",
-    file: "استمارة_تبادل_زيارات_جيهان_.docx",
+    file: "استمارة تبادل زيارات  .docx",
     icon: "docx",
   },
   {
     name: "استمارة الدرس التطبيقي",
-    file: "استمارة_درس_تطبيقي_جيهان.docx",
+    file: "استمارة درس تطبيقي .docx",
     icon: "docx",
   },
   {
@@ -181,7 +181,7 @@ function DownloadLink({
   if (!restricted) {
     return (
       <a
-        href={`public//templates/${file}`}
+        href={`/templates/${encodeURIComponent(file)}`} // ← ADD THIS
         download={file}
         onClick={(e) => e.stopPropagation()}
         className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 sm:w-auto"
