@@ -15,19 +15,13 @@ interface TemplateFile {
   name: string;
   file: string;
   icon: string;
-  restricted?: boolean; // requires the access code to download
+  restricted?: boolean;
 }
 
 interface TemplateGroup extends TemplateFile {
   children?: TemplateFile[];
 }
-// ────────────────────────────────────────────────
-// Templates — add/remove entries here as needed.
-// Unrestricted files must be placed in /public/templates/
-// Restricted files (restricted: true) must be placed in
-// /restricted-templates/ (outside /public) and served only
-// through /api/restricted-download after a code check.
-// ────────────────────────────────────────────────
+
 const MAIN_TEMPLATE: TemplateGroup = {
   name: "دليل التطوير المهني",
   file: "دليل التطوير المهني.pptx",
@@ -79,22 +73,22 @@ const MAIN_TEMPLATE: TemplateGroup = {
 const TEMPLATES: TemplateFile[] = [
   {
     name: "استمارة التأمل الذاتي",
-    file: "استمارة التأمل الذاتي .docx", // ← spaces, not underscores
+    file: "استمارة التأمل الذاتي .docx",
     icon: "docx",
   },
   {
     name: "استمارة الخطة العلاجية",
-    file: "استمارة الخطة العلاجية .docx",
+    file: "استمارة الخطة العلاجية.docx",
     icon: "docx",
   },
   {
     name: "استمارة تبادل الزيارات",
-    file: "استمارة تبادل زيارات  .docx",
+    file: "استمارة تبادل زيارات.docx",
     icon: "docx",
   },
   {
     name: "استمارة الدرس التطبيقي",
-    file: "استمارة درس تطبيقي .docx",
+    file: "استمارة درس تطبيقي.docx",
     icon: "docx",
   },
   {
@@ -170,18 +164,54 @@ function DownloadIcon() {
 function DownloadLink({
   file,
   restricted,
+  children,
   onError,
 }: {
   file: string;
   restricted?: boolean;
+  children?: TemplateFile[];
   onError: (message: string) => void;
 }) {
   const [loading, setLoading] = useState(false);
 
+  // If children exist, download all children files
+  if (children && children.length > 0 && !restricted) {
+    return (
+      <button
+        type="button"
+        onClick={async (e) => {
+          e.stopPropagation();
+          setLoading(true);
+          try {
+            for (const child of children) {
+              const link = document.createElement("a");
+              link.href = `templates/${encodeURIComponent(child.file)}`;
+              link.download = child.file;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              // Small delay between downloads
+              await new Promise((resolve) => setTimeout(resolve, 200));
+            }
+          } catch (err: any) {
+            onError(err.message || "فشل تحميل الملفات");
+          } finally {
+            setLoading(false);
+          }
+        }}
+        disabled={loading}
+        className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 disabled:opacity-60 sm:w-auto"
+      >
+        <DownloadIcon />
+        {loading ? "..." : `تحميل ${children.length} ملف`}
+      </button>
+    );
+  }
+
   if (!restricted) {
     return (
       <a
-        href={`/templates/${encodeURIComponent(file)}`} // ← ADD THIS
+        href={`templates/${encodeURIComponent(file)}`}
         download={file}
         onClick={(e) => e.stopPropagation()}
         className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 sm:w-auto"
@@ -271,6 +301,7 @@ function MainTemplateCard({
           <DownloadLink
             file={template.file}
             restricted={template.restricted}
+            children={template.children}
             onError={onError}
           />
           <button
