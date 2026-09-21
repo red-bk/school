@@ -400,6 +400,7 @@ export default function HomePage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<ToastType>("success");
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   useEffect(() => {
     if (!showToast) return;
@@ -450,6 +451,7 @@ export default function HomePage() {
     }
     if (!sheetType) {
       setMessage("الرجاء اختيار نوع الورقة.");
+      setAttemptedSubmit(true);
       return;
     }
 
@@ -457,6 +459,8 @@ export default function HomePage() {
       setMessage("الرجاء اختيار ملف واحد على الأقل.");
       return;
     }
+
+    setAttemptedSubmit(false);
 
     try {
       setStatus("loading");
@@ -601,7 +605,14 @@ export default function HomePage() {
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 نوع الورقة
               </label>
-              <SheetTypePicker value={sheetType} onChange={setSheetType} />
+              <SheetTypePicker
+                value={sheetType}
+                onChange={(value) => {
+                  setSheetType(value);
+                  setAttemptedSubmit(false);
+                }}
+                error={attemptedSubmit && !sheetType}
+              />
             </div>
 
             <div>

@@ -17,6 +17,11 @@ const ENTRIES: Entry[] = [
   },
   {
     kind: "group",
+    label: "استمارة التأمل الذاتي",
+    children: [], // ← No children, but still selectable!
+  },
+  {
+    kind: "group",
     label: "النمو المهني — الفصل الأول — المجتمعات المهنية",
     children: SHEET_TYPES.filter((t) =>
       t.startsWith("النمو المهني للفصل الدراسي الاول المجتمعات"),
@@ -113,7 +118,7 @@ export default function SheetTypePicker({
   const parentInputRef = useRef<HTMLInputElement>(null);
   const childInputRef = useRef<HTMLInputElement>(null);
 
-  // Get parent groups only
+  // Get parent groups only (including empty ones)
   const parentGroups = ENTRIES.filter((e) => e.kind === "group");
 
   // Filter parent groups by search
@@ -153,12 +158,26 @@ export default function SheetTypePicker({
   }, []);
 
   function selectParent(parentLabel: string) {
-    setSelectedParent(parentLabel);
-    setParentInputValue(parentLabel);
-    setParentListOpen(false);
-    onChange(""); // Reset child selection
-    setChildInputValue(""); // Clear child input
-    setChildListOpen(true); // Open child list
+    const parent = parentGroups.find((g) => g.label === parentLabel);
+    const hasChildren =
+      parent && parent.kind === "group" && parent.children.length > 0;
+
+    if (!hasChildren) {
+      // If no children, select the parent directly as the value
+      onChange(parentLabel);
+      setSelectedParent(parentLabel);
+      setParentInputValue(parentLabel);
+      setParentListOpen(false);
+      setChildInputValue("");
+    } else {
+      // If has children, show child picker
+      setSelectedParent(parentLabel);
+      setParentInputValue(parentLabel);
+      setParentListOpen(false);
+      onChange(""); // Reset child selection
+      setChildInputValue(""); // Clear child input
+      setChildListOpen(true); // Open child list
+    }
   }
 
   function selectChild(childValue: string) {
@@ -172,6 +191,7 @@ export default function SheetTypePicker({
     setParentInputValue("");
     onChange("");
     setChildInputValue("");
+    setChildListOpen(false);
     setParentListOpen(true);
     setTimeout(() => {
       parentInputRef.current?.focus();
@@ -228,6 +248,7 @@ export default function SheetTypePicker({
             setParentListOpen(true);
             setChildListOpen(false);
           }}
+          required
           placeholder="ابحث عن فئة الورقة..."
           className="w-full rounded-lg border border-slate-300 py-2 ps-9 pe-8 text-sm outline-none focus:border-slate-500 text-right"
         />
@@ -390,9 +411,9 @@ export default function SheetTypePicker({
       )}
 
       {/* Display selected value */}
-      {value && (
+      {(value || (selectedParent && childrenOptions.length === 0)) && (
         <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600 whitespace-normal break-words">
-          ✓ {value}
+          ✓ {value || selectedParent}
         </p>
       )}
     </div>
