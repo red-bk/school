@@ -611,7 +611,7 @@ export default function HomePage() {
                   setSheetType(value);
                   setAttemptedSubmit(false);
                 }}
-                error={attemptedSubmit && !sheetType}
+                // error={attemptedSubmit && !sheetType}
               />
             </div>
 
