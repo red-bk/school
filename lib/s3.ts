@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 
 export const s3 = new S3Client({
@@ -15,24 +20,53 @@ export const s3 = new S3Client({
 export async function uploadFileToS3(
   buffer: Buffer,
   originalFileName: string,
-  contentType: string
+  contentType: string,
 ) {
   const extension = originalFileName.split(".").pop() || "bin";
   const key = `sheets/${randomUUID()}.${extension}`;
+
+  // Override contentType based on file extension - don't trust browser!
+  // This ensures S3 stores the correct MIME type regardless of what the client sends
+  let finalContentType = contentType;
+
+  if (originalFileName.endsWith(".pptx")) {
+    finalContentType =
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  } else if (originalFileName.endsWith(".ppt")) {
+    finalContentType = "application/vnd.ms-powerpoint";
+  } else if (originalFileName.endsWith(".docx")) {
+    finalContentType =
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  } else if (originalFileName.endsWith(".doc")) {
+    finalContentType = "application/msword";
+  } else if (originalFileName.endsWith(".xlsx")) {
+    finalContentType =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  } else if (originalFileName.endsWith(".xls")) {
+    finalContentType = "application/vnd.ms-excel";
+  } else if (originalFileName.endsWith(".pdf")) {
+    finalContentType = "application/pdf";
+  }
+
+  console.log("📤 Uploading to S3:", {
+    fileName: originalFileName,
+    key,
+    contentType: finalContentType,
+    size: buffer.length,
+  });
 
   await s3.send(
     new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME as string,
       Key: key,
       Body: buffer,
-      ContentType: contentType,
-      // Remove ACL if your bucket has "Bucket owner enforced" object ownership
-      // (uncomment only if your bucket policy requires public-read ACLs)
-      // ACL: "public-read",
-    })
+      ContentType: finalContentType, // ← Use corrected MIME type!
+    }),
   );
 
   const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+  console.log("✅ File uploaded successfully:", { key, fileUrl });
 
   return { fileUrl, key };
 }
@@ -48,7 +82,7 @@ export async function getFileFromS3(key: string) {
     new GetObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME as string,
       Key: key,
-    })
+    }),
   );
 
   const byteArray = await result.Body!.transformToByteArray();
@@ -72,7 +106,7 @@ export async function deleteFileFromS3(key: string) {
       new DeleteObjectCommand({
         Bucket: process.env.AWS_BUCKET_NAME as string,
         Key: key,
-      })
+      }),
     );
   } catch (error) {
     console.error("Failed to delete old S3 object:", key, error);

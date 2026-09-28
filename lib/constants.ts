@@ -95,6 +95,7 @@ export const BLOCKED_MIME_PREFIXES = ["video/"];
  * يُستخدم في الواجهة الأمامية وفي مسارات الـ API على حد سواء.
  * يعيد رسالة خطأ بالعربية إن وُجدت مشكلة، أو null إذا كان الملف صالحًا.
  */
+// NEW - Now accepts ALL file types:
 export function validateFile(file: {
   size: number;
   type: string;
@@ -103,9 +104,6 @@ export function validateFile(file: {
     return "حجم الملف يتجاوز الحد الأقصى المسموح به (5 جيجابايت).";
   }
 
-  if (BLOCKED_MIME_PREFIXES.some((prefix) => file.type.startsWith(prefix))) {
-    return "لا يُسمح برفع ملفات الفيديو.";
-  }
-
+  // ✅ Accept all file types - no restrictions on file type
   return null;
 }
