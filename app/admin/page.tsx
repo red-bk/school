@@ -141,6 +141,39 @@ export default function AdminPage() {
                             <path d="M5 21h14" />
                           </svg>
                         </a>
+                        {/* Preview */}
+                        <button
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-800 hover:text-white hover:border-slate-800"
+                          type="button"
+                          onClick={async () => {
+                            const newTab = window.open("about:blank", "_blank");
+
+                            if (!newTab) {
+                              alert("Please allow pop-ups to preview files.");
+                              return;
+                            }
+
+                            try {
+                              const response = await fetch(
+                                `/api/upload/${row.id}/preview`,
+                              );
+
+                              if (!response.ok) {
+                                newTab.close();
+                                alert("Unable to open file.");
+                                return;
+                              }
+
+                              const { url } = await response.json();
+                              newTab.location.href = url;
+                            } catch {
+                              newTab.close();
+                              alert("Unable to open file.");
+                            }
+                          }}
+                        >
+                          معاينة
+                        </button>
                       </td>
                     </tr>
                   ))}

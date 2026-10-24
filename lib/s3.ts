@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
 export const s3 = new S3Client({
@@ -13,6 +14,18 @@ export const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
   },
 });
+
+export async function getSignedFileUrl(key: string) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: key,
+    ResponseContentDisposition: "inline",
+  });
+
+  return getSignedUrl(s3, command, {
+    expiresIn: 18000, // 5 hour
+  });
+}
 
 /**
  * Uploads a file buffer to S3 and returns its public URL + key.
