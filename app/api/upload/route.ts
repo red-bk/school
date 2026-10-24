@@ -41,13 +41,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: fileError }, { status: 400 });
     }
 
-    // --- Check for existing record with same teacherId + sheetType ---
-    const existing = await prisma.sheetUpload.findFirst({
-      where: {
-        teacherId: teacherId.trim(),
-        sheetType,
-      },
-    });
+    // --- Check if this is the FIRST file in a new batch ---
+    // The frontend marks the first file with a special flag so we know when to
+    // delete old records. Without this, uploading 3 files would delete on file 1
+    // then files 2 & 3 add normally — correct. But a second batch upload later
+    // would also delete all records from the first batch on its first file — also correct.
+    const isFirstInBatch = formData.get("isFirstInBatch") === "true";
+
+    let replaced = false;
+
+    if (isFirstInBatch) {
+      // --- Delete all existing records for this teacherId + sheetType ---
+      const existingRecords = await prisma.sheetUpload.findMany({
+        where: { teacherId: teacherId.trim(), sheetType },
+      });
+
+      if (existingRecords.length > 0) {
+        replaced = true;
+        // Delete old S3 files
+        await Promise.allSettled(
+          existingRecords.map((r) => deleteFileFromS3(r.fileKey)),
+        );
+        // Delete old DB records
+        await prisma.sheetUpload.deleteMany({
+          where: { teacherId: teacherId.trim(), sheetType },
+        });
+      }
+    }
 
     // --- Convert File -> Buffer ---
     const arrayBuffer = await file.arrayBuffer();
@@ -60,33 +80,7 @@ export async function POST(req: NextRequest) {
       file.type || "application/octet-stream",
     );
 
-    if (existing) {
-      // --- Replace: delete old S3 object, update DB record ---
-      try {
-        await deleteFileFromS3(existing.fileKey);
-      } catch (deleteErr) {
-        // Log but don't fail the request if old file delete fails
-        console.warn("Failed to delete old S3 file:", deleteErr);
-      }
-
-      const updated = await prisma.sheetUpload.update({
-        where: { id: existing.id },
-        data: {
-          teacherName: teacherName.trim(),
-          fileName: file.name,
-          fileUrl,
-          fileKey: key,
-          updatedAt: new Date(),
-        },
-      });
-
-      return NextResponse.json(
-        { success: true, replaced: true, data: updated },
-        { status: 200 },
-      );
-    }
-
-    // --- No existing record: create new ---
+    // --- Create new record ---
     const record = await prisma.sheetUpload.create({
       data: {
         teacherId: teacherId.trim(),
@@ -99,7 +93,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { success: true, replaced: false, data: record },
+      { success: true, replaced, data: record },
       { status: 201 },
     );
   } catch (error) {

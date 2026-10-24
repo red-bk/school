@@ -174,7 +174,6 @@ function DownloadLink({
 }) {
   const [loading, setLoading] = useState(false);
 
-  // If children exist, download all children files
   if (children && children.length > 0 && !restricted) {
     return (
       <button
@@ -183,7 +182,6 @@ function DownloadLink({
           e.stopPropagation();
           setLoading(true);
           try {
-            // Download parent file
             const parentLink = document.createElement("a");
             parentLink.href = `/templates/${encodeURIComponent(file)}`;
             parentLink.download = file;
@@ -191,7 +189,6 @@ function DownloadLink({
             parentLink.click();
             document.body.removeChild(parentLink);
 
-            // Download all children (no wait)
             for (const child of children) {
               const link = document.createElement("a");
               link.href = `/templates/${encodeURIComponent(child.file)}`;
@@ -454,7 +451,6 @@ export default function HomePage() {
       setAttemptedSubmit(true);
       return;
     }
-
     if (files.length === 0) {
       setMessage("الرجاء اختيار ملف واحد على الأقل.");
       return;
@@ -464,22 +460,36 @@ export default function HomePage() {
 
     try {
       setStatus("loading");
-      const results = await Promise.all(
-        files.map(async ({ file }) => {
-          const formData = new FormData();
-          formData.append("teacherId", teacherId.trim());
-          formData.append("teacherName", teacherName.trim());
-          formData.append("sheetType", sheetType as string);
-          formData.append("file", file);
-          const res = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data?.error || `فشل رفع ${file.name}`);
-          return data;
-        }),
-      );
+      const results: any[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const { file } = files[i];
+        const formData = new FormData();
+        formData.append("teacherId", teacherId.trim());
+        formData.append("teacherName", teacherName.trim());
+        formData.append("sheetType", sheetType as string);
+        formData.append("file", file);
+        formData.append("isFirstInBatch", i === 0 ? "true" : "false");
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const text = await res.text();
+        let data: any = {};
+        try {
+          data = JSON.parse(text);
+        } catch {
+          /* non-JSON response */
+        }
+        if (!res.ok) {
+          const arabicError =
+            res.status === 413
+              ? `الملف "${file.name}" كبير جداً، يرجى التحقق منه والمحاولة مرة أخرى.`
+              : data?.error ||
+                `حدث خطأ أثناء رفع "${file.name}"، يرجى المحاولة مرة أخرى.`;
+          throw new Error(arabicError);
+        }
+        results.push(data);
+      }
       const anyReplaced = results.some((r) => r.replaced);
       setStatus("success");
       setMessage("");
@@ -600,7 +610,6 @@ export default function HomePage() {
               />
             </div>
 
-            {/* ── Grouped searchable sheet type picker ── */}
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 نوع الورقة
@@ -611,7 +620,6 @@ export default function HomePage() {
                   setSheetType(value);
                   setAttemptedSubmit(false);
                 }}
-                // error={attemptedSubmit && !sheetType}
               />
             </div>
 
