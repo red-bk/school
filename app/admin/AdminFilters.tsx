@@ -22,6 +22,11 @@ const ENTRIES: Entry[] = [
       "خطة الفريق حسب التخصص",
     ],
   },
+  {
+    kind: "group",
+    label: "استمارة التأمل الذاتي",
+    children: [], // ← No children, but still selectable!
+  },
 
   {
     kind: "group",
@@ -172,14 +177,16 @@ export default function AdminFilters({ onSearchChange, onTypeChange }: Props) {
     const q = childInputValue.trim().toLowerCase();
     return childrenOptions.filter((c) => c.toLowerCase().includes(q));
   }, [childInputValue, childrenOptions]);
-
   function selectParent(parentLabel: string) {
+    const parent = parentGroups.find((g) => g.label === parentLabel);
+    const hasChildren = parent?.kind === "group" && parent.children.length > 0;
+
     setSelectedParent(parentLabel);
     setParentInputValue(parentLabel);
     setParentListOpen(false);
-    setTypeValue(""); // Reset child selection
-    setChildInputValue(""); // Clear child input
-    setChildListOpen(true); // Open child list
+    setTypeValue(hasChildren ? "" : parentLabel); // ← fix: filter immediately if no children
+    setChildInputValue("");
+    setChildListOpen(hasChildren); // ← only open child list if there are children
   }
 
   function selectChild(childValue: string) {
