@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,6 +44,25 @@ export default function AdminPage() {
   }, [search, type]);
 
   const hasActiveFilters = Boolean(search || type);
+
+  async function handleDelete(id: string, fileName: string) {
+    if (!confirm(`هل أنت متأكد من حذف "${fileName}"؟`)) return;
+
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/upload/${id}/delete`, { method: "DELETE" });
+      if (res.ok) {
+        setUploads((prev) => prev.filter((u) => u.id !== id));
+        setTotalCount((prev) => prev - 1);
+      } else {
+        alert("حدث خطأ أثناء الحذف، يرجى المحاولة مرة أخرى.");
+      }
+    } catch {
+      alert("حدث خطأ أثناء الحذف، يرجى المحاولة مرة أخرى.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <main className="min-h-screen px-4 py-10">
@@ -120,7 +140,7 @@ export default function AdminPage() {
                           numberingSystem: "latn",
                         })}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center flex  gap-3">
                         <a
                           href={`/api/download/${row.id}`}
                           title={`تحميل ${row.fileName}`}
@@ -173,6 +193,48 @@ export default function AdminPage() {
                           }}
                         >
                           معاينة
+                        </button>
+                        {/* Delete */}
+                        <button
+                          type="button"
+                          disabled={deletingId === row.id}
+                          onClick={() => handleDelete(row.id, row.fileName)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-600 hover:text-white hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {deletingId === row.id ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 animate-spin"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={1.8}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                              <path d="M9 6V4h6v2" />
+                            </svg>
+                          )}
+                          حذف
                         </button>
                       </td>
                     </tr>
