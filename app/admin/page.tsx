@@ -20,6 +20,10 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    fileName: string;
+  } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,8 +49,9 @@ export default function AdminPage() {
 
   const hasActiveFilters = Boolean(search || type);
 
-  async function handleDelete(id: string, fileName: string) {
-    if (!confirm(`هل أنت متأكد من حذف "${fileName}"؟`)) return;
+  async function handleDelete() {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
 
     setDeletingId(id);
     try {
@@ -54,6 +59,7 @@ export default function AdminPage() {
       if (res.ok) {
         setUploads((prev) => prev.filter((u) => u.id !== id));
         setTotalCount((prev) => prev - 1);
+        setConfirmDelete(null);
       } else {
         alert("حدث خطأ أثناء الحذف، يرجى المحاولة مرة أخرى.");
       }
@@ -198,7 +204,12 @@ export default function AdminPage() {
                         <button
                           type="button"
                           disabled={deletingId === row.id}
-                          onClick={() => handleDelete(row.id, row.fileName)}
+                          onClick={() =>
+                            setConfirmDelete({
+                              id: row.id,
+                              fileName: row.fileName,
+                            })
+                          }
                           className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-600 hover:text-white hover:border-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {deletingId === row.id ? (
@@ -245,6 +256,58 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mx-auto">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6 text-red-600"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14H6L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </svg>
+            </div>
+            <h2 className="mb-1 text-center text-base font-semibold text-slate-800">
+              تأكيد الحذف
+            </h2>
+            <p className="mb-1 text-center text-sm text-slate-500">
+              هل أنت متأكد من حذف هذا الملف؟
+            </p>
+            <p className="mb-6 text-center text-xs text-slate-400 break-words">
+              {confirmDelete.fileName}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                disabled={!!deletingId}
+                className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={!!deletingId}
+                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingId ? "جاري الحذف..." : "حذف"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
