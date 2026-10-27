@@ -438,6 +438,7 @@ export default function HomePage() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage("");
+
     if (!teacherId.trim()) {
       setMessage("الرجاء إدخال رقم الهوية .");
       return;
@@ -461,18 +462,56 @@ export default function HomePage() {
     try {
       setStatus("loading");
       const results: any[] = [];
+
       for (let i = 0; i < files.length; i++) {
         const { file } = files[i];
+
+        // Step 1: Get presigned URL from your API
+        const presignRes = await fetch("/api/upload/presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: file.name,
+            contentType: file.type || "application/octet-stream",
+            fileSize: file.size,
+          }),
+        });
+
+        if (!presignRes.ok) {
+          const data = await presignRes.json().catch(() => ({}));
+          throw new Error(
+            data?.error || `فشل الحصول على رابط الرفع لـ "${file.name}"`,
+          );
+        }
+
+        const { uploadUrl, fileUrl, key } = await presignRes.json();
+
+        // Step 2: Upload directly to S3 (bypasses Vercel size limit)
+        const s3Res = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
+        });
+
+        if (!s3Res.ok) {
+          throw new Error(`فشل رفع الملف "${file.name}" إلى التخزين`);
+        }
+
+        // Step 3: Confirm with your API to save the DB record
         const formData = new FormData();
         formData.append("teacherId", teacherId.trim());
         formData.append("teacherName", teacherName.trim());
         formData.append("sheetType", sheetType as string);
-        formData.append("file", file);
+        formData.append("fileName", file.name);
+        formData.append("fileUrl", fileUrl);
+        formData.append("fileKey", key);
         formData.append("isFirstInBatch", i === 0 ? "true" : "false");
+
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
+
         const text = await res.text();
         let data: any = {};
         try {
@@ -480,16 +519,19 @@ export default function HomePage() {
         } catch {
           /* non-JSON response */
         }
+
         if (!res.ok) {
           const arabicError =
             res.status === 413
               ? `الملف "${file.name}" كبير جداً، يرجى التحقق منه والمحاولة مرة أخرى.`
               : data?.error ||
-                `حدث خطأ أثناء رفع "${file.name}"، يرجى المحاولة مرة أخرى.`;
+                `حدث خطأ أثناء حفظ سجل "${file.name}"، يرجى المحاولة مرة أخرى.`;
           throw new Error(arabicError);
         }
+
         results.push(data);
       }
+
       const anyReplaced = results.some((r) => r.replaced);
       setStatus("success");
       setMessage("");
@@ -513,6 +555,29 @@ export default function HomePage() {
     <main className="flex min-h-screen items-center justify-center overflow-x-hidden px-4 py-10">
       <div className="w-full max-w-lg space-y-6">
         {/* ── Templates section ── */}
+        <div className="w-fit">
+          <a
+            href="/my-files"
+            className="flex items-center gap-2 rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 7h18M3 12h18M3 17h18"
+              />
+            </svg>
+            عرض ملفاتي المرفوعة
+          </a>
+        </div>
+
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <svg

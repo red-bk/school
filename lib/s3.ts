@@ -125,3 +125,44 @@ export async function deleteFileFromS3(key: string) {
     console.error("Failed to delete old S3 object:", key, error);
   }
 }
+
+export async function getPresignedUploadUrl(
+  originalFileName: string,
+  contentType: string,
+) {
+  const extension = originalFileName.split(".").pop() || "bin";
+  const key = `sheets/${randomUUID()}.${extension}`;
+
+  // Same MIME override logic you already have
+  let finalContentType = contentType;
+  if (originalFileName.endsWith(".pptx")) {
+    finalContentType =
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  } else if (originalFileName.endsWith(".ppt")) {
+    finalContentType = "application/vnd.ms-powerpoint";
+  } else if (originalFileName.endsWith(".docx")) {
+    finalContentType =
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  } else if (originalFileName.endsWith(".doc")) {
+    finalContentType = "application/msword";
+  } else if (originalFileName.endsWith(".xlsx")) {
+    finalContentType =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  } else if (originalFileName.endsWith(".xls")) {
+    finalContentType = "application/vnd.ms-excel";
+  } else if (originalFileName.endsWith(".pdf")) {
+    finalContentType = "application/pdf";
+  }
+
+  const command = new PutObjectCommand({
+    Bucket: process.env.AWS_BUCKET_NAME as string,
+    Key: key,
+    ContentType: finalContentType,
+  });
+
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+
+  const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+  return { uploadUrl, fileUrl, key, contentType: finalContentType };
+}
