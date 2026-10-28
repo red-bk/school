@@ -487,11 +487,13 @@ export default function HomePage() {
         const { uploadUrl, fileUrl, key, contentType } =
           await presignRes.json();
 
+        const arrayBuffer = await file.arrayBuffer();
+
         // Step 2: Upload directly to S3 — use the SAME contentType that was signed
         const s3Res = await fetch(uploadUrl, {
           method: "PUT",
           headers: { "Content-Type": contentType },
-          body: file,
+          body: arrayBuffer,
         });
 
         if (!s3Res.ok) {
