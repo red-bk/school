@@ -499,9 +499,9 @@ export default function HomePage() {
         });
 
         if (!s3Res.ok) {
-          throw new Error(`فشل رفع الملف "${file.name}" إلى التخزين`);
+          const errText = await s3Res.text();
+          throw new Error(`S3 error ${s3Res.status}: ${errText}`);
         }
-
         // Step 3: Save DB record
         const formData = new FormData();
         formData.append("teacherId", teacherId.trim());
