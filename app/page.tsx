@@ -466,7 +466,7 @@ export default function HomePage() {
       for (let i = 0; i < files.length; i++) {
         const { file } = files[i];
 
-        // Step 1: Get presigned URL from your API
+        // Step 1: Get presigned URL
         const presignRes = await fetch("/api/upload/presign", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -484,12 +484,13 @@ export default function HomePage() {
           );
         }
 
-        const { uploadUrl, fileUrl, key } = await presignRes.json();
+        const { uploadUrl, fileUrl, key, contentType } =
+          await presignRes.json();
 
-        // Step 2: Upload directly to S3 (bypasses Vercel size limit)
+        // Step 2: Upload directly to S3 — use the SAME contentType that was signed
         const s3Res = await fetch(uploadUrl, {
           method: "PUT",
-          headers: { "Content-Type": file.type || "application/octet-stream" },
+          headers: { "Content-Type": contentType },
           body: file,
         });
 
@@ -497,7 +498,7 @@ export default function HomePage() {
           throw new Error(`فشل رفع الملف "${file.name}" إلى التخزين`);
         }
 
-        // Step 3: Confirm with your API to save the DB record
+        // Step 3: Save DB record
         const formData = new FormData();
         formData.append("teacherId", teacherId.trim());
         formData.append("teacherName", teacherName.trim());
