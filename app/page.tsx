@@ -462,47 +462,66 @@ export default function HomePage() {
     try {
       setStatus("loading");
       const results: any[] = [];
+      const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB per chunk
 
       for (let i = 0; i < files.length; i++) {
         const { file } = files[i];
 
-        // Step 1: Get presigned URL
-        const presignRes = await fetch("/api/upload/presign", {
+        // Step 1: Start multipart upload
+        const startRes = await fetch("/api/upload/multipart/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fileName: file.name,
             contentType: file.type || "application/octet-stream",
-            fileSize: file.size,
           }),
         });
 
-        if (!presignRes.ok) {
-          const data = await presignRes.json().catch(() => ({}));
-          throw new Error(
-            data?.error || `فشل الحصول على رابط الرفع لـ "${file.name}"`,
-          );
+        if (!startRes.ok) {
+          const data = await startRes.json().catch(() => ({}));
+          throw new Error(data?.error || `فشل بدء رفع "${file.name}"`);
         }
 
-        const { uploadUrl, fileUrl, key, contentType } =
-          await presignRes.json();
+        const { uploadId, key, fileUrl, contentType } = await startRes.json();
 
-        const arrayBuffer = await file.arrayBuffer();
+        // Step 2: Upload chunks
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        const parts: { ETag: string; partNumber: number }[] = [];
 
-        // Step 2: Upload directly to S3 — use the SAME contentType that was signed
-        const s3Res = await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": contentType },
-          body: arrayBuffer,
-          mode: "cors",
-          cache: "no-store",
+        for (let partNumber = 1; partNumber <= totalChunks; partNumber++) {
+          const start = (partNumber - 1) * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunk = file.slice(start, end);
+          const arrayBuffer = await chunk.arrayBuffer();
+
+          const chunkRes = await fetch(
+            `/api/upload/multipart/chunk?key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}&partNumber=${partNumber}`,
+            {
+              method: "PUT",
+              body: arrayBuffer,
+            },
+          );
+
+          if (!chunkRes.ok) {
+            throw new Error(`فشل رفع جزء من الملف "${file.name}"`);
+          }
+
+          const { ETag } = await chunkRes.json();
+          parts.push({ ETag, partNumber });
+        }
+
+        // Step 3: Complete multipart upload
+        const completeRes = await fetch("/api/upload/multipart/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, uploadId, parts }),
         });
 
-        if (!s3Res.ok) {
-          const errText = await s3Res.text();
-          throw new Error(`S3 error ${s3Res.status}: ${errText}`);
+        if (!completeRes.ok) {
+          throw new Error(`فشل إكمال رفع "${file.name}"`);
         }
-        // Step 3: Save DB record
+
+        // Step 4: Save DB record
         const formData = new FormData();
         formData.append("teacherId", teacherId.trim());
         formData.append("teacherName", teacherName.trim());
@@ -522,7 +541,7 @@ export default function HomePage() {
         try {
           data = JSON.parse(text);
         } catch {
-          /* non-JSON response */
+          /* non-JSON */
         }
 
         if (!res.ok) {
