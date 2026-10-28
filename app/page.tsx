@@ -462,66 +462,45 @@ export default function HomePage() {
     try {
       setStatus("loading");
       const results: any[] = [];
-      const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB per chunk
 
       for (let i = 0; i < files.length; i++) {
         const { file } = files[i];
 
-        // Step 1: Start multipart upload
-        const startRes = await fetch("/api/upload/multipart/start", {
+        // Step 1: Get key + fileUrl from presign
+        const presignRes = await fetch("/api/upload/presign", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fileName: file.name,
             contentType: file.type || "application/octet-stream",
+            fileSize: file.size,
           }),
         });
 
-        if (!startRes.ok) {
-          const data = await startRes.json().catch(() => ({}));
-          throw new Error(data?.error || `فشل بدء رفع "${file.name}"`);
-        }
-
-        const { uploadId, key, fileUrl, contentType } = await startRes.json();
-
-        // Step 2: Upload chunks
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-        const parts: { ETag: string; partNumber: number }[] = [];
-
-        for (let partNumber = 1; partNumber <= totalChunks; partNumber++) {
-          const start = (partNumber - 1) * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, file.size);
-          const chunk = file.slice(start, end);
-          const arrayBuffer = await chunk.arrayBuffer();
-
-          const chunkRes = await fetch(
-            `/api/upload/multipart/chunk?key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}&partNumber=${partNumber}`,
-            {
-              method: "PUT",
-              body: arrayBuffer,
-            },
+        if (!presignRes.ok) {
+          const data = await presignRes.json().catch(() => ({}));
+          throw new Error(
+            data?.error || `فشل الحصول على رابط الرفع لـ "${file.name}"`,
           );
-
-          if (!chunkRes.ok) {
-            throw new Error(`فشل رفع جزء من الملف "${file.name}"`);
-          }
-
-          const { ETag } = await chunkRes.json();
-          parts.push({ ETag, partNumber });
         }
 
-        // Step 3: Complete multipart upload
-        const completeRes = await fetch("/api/upload/multipart/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key, uploadId, parts }),
-        });
+        const { fileUrl, key, contentType } = await presignRes.json();
 
-        if (!completeRes.ok) {
-          throw new Error(`فشل إكمال رفع "${file.name}"`);
+        // Step 2: Upload through Vercel proxy to S3 (works on all browsers)
+        const arrayBuffer = await file.arrayBuffer();
+        const s3Res = await fetch(
+          `/api/upload/s3proxy?key=${encodeURIComponent(key)}&contentType=${encodeURIComponent(contentType)}`,
+          {
+            method: "PUT",
+            body: arrayBuffer,
+          },
+        );
+
+        if (!s3Res.ok) {
+          throw new Error(`فشل رفع الملف "${file.name}" إلى التخزين`);
         }
 
-        // Step 4: Save DB record
+        // Step 3: Save DB record
         const formData = new FormData();
         formData.append("teacherId", teacherId.trim());
         formData.append("teacherName", teacherName.trim());
