@@ -494,6 +494,8 @@ export default function HomePage() {
           method: "PUT",
           headers: { "Content-Type": contentType },
           body: arrayBuffer,
+          mode: "cors",
+          cache: "no-store",
         });
 
         if (!s3Res.ok) {
